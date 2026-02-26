@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClauseAI — Draft Legal Contracts in Seconds</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; margin: 0; }
+
+        /* ── Gradient ── */
+        .gradient-bg { background: linear-gradient(135deg, #6366F1 0%, #A855F7 100%); }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366F1, #A855F7);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* ── New Logo SVG mark ── */
+        .logo-mark { flex-shrink: 0; }
+
+        /* ── Onboarding ── */
+        #onboarding {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A855F7 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+        }
+        .onboard-card {
+            background: white; border-radius: 24px; padding: 48px 52px; width: 540px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.3);
+        }
+        .radio-row {
+            display: flex; align-items: center; padding: 14px 16px;
+            border: 2px solid #E5E7EB; border-radius: 14px; cursor: pointer;
+            transition: border-color .2s, background .2s, box-shadow .2s; margin-bottom: 10px;
+            position: relative; overflow: hidden;
+        }
+        .radio-row:hover { border-color: #6366F1; background: #F5F3FF; }
+        .radio-row.selected {
+            border-color: #6366F1; background: #EEF2FF;
+            box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+        }
+        .radio-row.selected::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 4px; background: linear-gradient(180deg,#6366F1,#A855F7); border-radius: 4px 0 0 4px;
+        }
+        .radio-row input[type=radio] { accent-color: #6366F1; width:18px; height:18px; margin-right:12px; }
+        .key-input-wrap { margin-top: 10px; display: none; }
+        .key-input-wrap.show { display: block; animation: fadeSlideIn .2s ease; }
+        .key-input {
+            width: 100%; padding: 11px 14px; border: 1.5px solid #D1D5DB;
+            border-radius: 10px; font-size:14px; outline:none; transition: border-color .2s, box-shadow .2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .key-input:focus { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+
+        /* Improve preview with bracket highlights */
+        #improve-preview {
+            display: none;
+            background: #FFFBF0; border: 1.5px solid #FCD34D; border-radius: 14px;
+            padding: 14px 16px; font-size: 14px; line-height: 1.8;
+            font-family: 'Inter', sans-serif; white-space: pre-wrap;
+            min-height: 120px; margin-top: 0; color: #374151;
+        }
+        #improve-preview.show { display: block; animation: fadeSlideIn .2s ease; }
+        .bracket-highlight {
+            background: #FEF3C7; border-bottom: 2px dashed #F59E0B;
+            border-radius: 3px; padding: 1px 4px; font-weight: 600; color: #92400E;
+        }
+        .improve-preview-label {
+            font-size: 11px; font-weight: 700; color: #92400E; text-transform: uppercase;
+            letter-spacing: .06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* Billing info banners */
+        .billing-info {
+            background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px;
+            padding: 10px 14px; font-size: 12px; color: #1E40AF; margin-top: 10px;
+            line-height: 1.6; display: none;
+        }
+        .billing-info.show { display: block; animation: fadeSlideIn .2s ease; }
+        .billing-info a { color: #2563EB; font-weight: 600; text-decoration: none; }
+        .billing-info a:hover { text-decoration: underline; }
+        .billing-info .billing-highlight { font-weight: 700; color: #1D4ED8; }
+
+        .quality-warning {
+            background:#FFFBEB; border:1px solid #FCD34D; border-radius:12px;
+            padding:12px 14px; font-size:13px; color:#92400E; margin-top:12px; display:none;
+            line-height: 1.5;
+        }
+        .quality-warning.show { display: flex; gap:8px; align-items:flex-start; }
+        .btn-primary {
+            width:100%; padding:14px; border-radius:12px; font-weight:700; font-size:16px;
+            background: linear-gradient(135deg,#6366F1,#A855F7); color:white; border:none;
+            cursor:pointer; transition: opacity .2s, transform .1s; margin-top:24px;
+        }
+        .btn-primary:hover { opacity:.92; transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+        .disclaimer-banner {
+            background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px;
+            padding:11px 14px; font-size:12px; color:#166534; margin-top:18px;
+            display:flex; gap:8px; align-items:flex-start; line-height:1.5;
+        }
+
+        /* ── Main app ── */
+        #app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+        #app.show { display: flex; }
+
+        /* Nav */
+        #main-nav {
+            height: 56px; background:white; border-bottom:1px solid #F3F4F6;
+            display:flex; align-items:center; justify-content:space-between;
+            padding: 0 20px; flex-shrink:0; z-index:10;
+            box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        }
+        .nav-logo { display:flex; align-items:center; gap:9px; text-decoration:none; }
+        .nav-logo-text { font-size:19px; font-weight:800; color:#111827; letter-spacing:-.3px; }
+        .nav-right { display:flex; align-items:center; gap:10px; }
+        .nav-provider-badge {
+            font-size:12px; font-weight:600; padding:5px 12px; border-radius:999px;
+            background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+            color:#4F46E5; border: 1px solid #C7D2FE;
+        }
+        .nav-btn {
+            background:none; border:1.5px solid #E5E7EB; border-radius:9px;
+            padding:6px 14px; cursor:pointer; font-size:13px; color:#374151;
+            font-family:'Inter',sans-serif; font-weight:500;
+            transition: border-color .15s, background .15s;
+        }
+        .nav-btn:hover { border-color:#6366F1; background:#F5F3FF; color:#4F46E5; }
+
+        /* API Error Banner */
+        #api-error-banner {
+            background:#FEF2F2; border:1px solid #FECACA; border-radius:10px;
+            padding:10px 14px; font-size:13px; color:#991B1B; margin-top:12px;
+            display:none; gap:8px; align-items:flex-start; line-height:1.5;
+        }
+        #api-error-banner.show { display:flex; }
+        #api-error-banner a { color:#DC2626; font-weight:600; text-decoration:underline; }
+
+        /* Resume banner */
+        #resume-banner {
+            background: linear-gradient(90deg, #EFF6FF, #F5F3FF);
+            border-bottom:1px solid #BFDBFE;
+            padding:10px 24px; display:none; align-items:center;
+            justify-content:space-between; font-size:13px; color:#1E40AF; flex-shrink:0;
+        }
+        #resume-banner.show { display: flex; }
+
+        /* Intake */
+        #intake-view {
+            flex:1; display:flex; flex-direction:column; align-items:center;
+            justify-content:center; padding: 48px 24px; overflow-y:auto;
+            background: #FAFAFA;
+        }
+        .intake-inner { width:100%; max-width:680px; }
+        .intake-title {
+            font-size:30px; font-weight:800; color:#111827; margin-bottom:8px;
+            letter-spacing: -.4px; line-height: 1.2;
+        }
+        .intake-title .highlight { background: linear-gradient(135deg,#6366F1,#A855F7); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .intake-sub { font-size:16px; color:#6B7280; margin-bottom:28px; line-height:1.6; }
+        .example-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .chip {
+            padding:8px 16px; border-radius:999px; border:1.5px solid #E5E7EB;
+            font-size:13px; font-weight:500; color:#374151; cursor:pointer; background:white;
+            transition: border-color .15s, background .15s, transform .1s;
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        }
+        .chip:hover { border-color:#6366F1; background:#F5F3FF; color:#4F46E5; transform: translateY(-1px); }
+
+        #intake-textarea {
+            width:100%; min-height:148px; padding:18px; border:2px solid #E5E7EB;
+            border-radius:16px; font-size:15px; font-family:'Inter',sans-serif;
+            resize:vertical; outline:none; transition: border-color .2s, box-shadow .2s;
+            color:#111827; line-height:1.7; background:white;
+            box-shadow: 0 1px 4px rgba(0,0,0,.04);
+        }
+        #intake-textarea:focus {
+            border-color:#6366F1;
+            box-shadow: 0 0 0 4px rgba(99,102,241,.1), 0 1px 4px rgba(0,0,0,.04);
+        }
+
+        /* Revert button */
+        #revert-btn {
+            display: none; background: none; border: none; cursor: pointer;
+            font-size: 12px; color: #9CA3AF; padding: 4px 0; margin-top: 6px;
+            font-family: 'Inter', sans-serif; transition: color .15s;
+        }
+        #revert-btn:hover { color: #6366F1; }
+        #revert-btn.show { display: inline-flex; align-items: center; gap: 4px; }
+
+        .intake-btn-row {
+            display:flex; flex-direction:column; gap:10px; margin-top:14px;
+        }
+        .intake-btn-secondary {
+            display:flex; align-items:center; justify-content:center; gap:6px;
+            align-self: flex-start;
+        }
+        .btn-improve {
+            display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+            border:1.5px solid #6366F1; border-radius:999px; color:#4F46E5;
+            font-weight:600; font-size:13px; background:white; cursor:pointer;
+            transition: background .15s, box-shadow .15s;
+        }
+        .btn-improve:hover { background:#EEF2FF; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .btn-improve:disabled { opacity:.5; cursor:not-allowed; }
+        .btn-go {
+            width:100%; padding:14px; border-radius:14px;
+            background:linear-gradient(135deg,#6366F1,#A855F7); color:white;
+            border:none; font-weight:700; font-size:16px;
+            cursor:pointer; transition: opacity .2s, transform .1s;
+            letter-spacing: -.1px;
+        }
+        .btn-go:hover { opacity:.92; transform: translateY(-1px); }
+        .btn-go:active { transform: translateY(0); }
+        .btn-go:disabled { opacity:.5; cursor:not-allowed; }
+
+        /* Two-panel editor */
+        #editor-view { display:none; flex:1; overflow:hidden; }
+        #editor-view.show { display:flex; }
+
+        /* ── LEFT PANEL (dark theme) ── */
+        #left-panel {
+            width:360px; flex-shrink:0;
+            background:#1C1C1E;
+            display:flex; flex-direction:column; overflow:hidden;
+        }
+
+        /* Version header */
+        .left-version-bar {
+            padding:14px 16px 10px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            flex-shrink:0;
+        }
+        .version-top-row {
+            display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;
+        }
+        .version-label { font-size:13px; font-weight:700; color:#F9FAFB; }
+        .version-time { font-size:11px; color:#6B7280; }
+        .left-action-row { display:flex; gap:6px; }
+        .left-action-btn {
+            flex:1; padding:7px 0; border:1px solid rgba(255,255,255,.1); border-radius:8px;
+            background:rgba(255,255,255,.05); color:#9CA3AF; font-size:12px; font-weight:500;
+            cursor:pointer; text-align:center; font-family:'Inter',sans-serif;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .left-action-btn:hover { background:rgba(255,255,255,.1); color:#E5E7EB; border-color:rgba(255,255,255,.2); }
+
+        /* Suggestion chips — horizontal scroll row */
+        #suggestion-chips {
+            padding: 8px 12px 6px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        #suggestion-chips.show { display: flex; }
+        .chips-label { font-size:10px; font-weight:700; color:#4B5563; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px; }
+        #chips-scroll-row {
+            display: flex;
+            flex-direction: row;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        #chips-scroll-row::-webkit-scrollbar { display: none; }
+        .suggestion-chip {
+            display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+            padding: 5px 11px; background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3);
+            border-radius: 20px; cursor: pointer; font-size: 11.5px; color: #A5B4FC;
+            transition: background .15s, color .15s; flex-shrink: 0;
+        }
+        .suggestion-chip:hover { background: rgba(99,102,241,.28); color: #C7D2FE; }
+        .suggestion-chip-arrow { font-size: 10px; color: #6366F1; }
+
+        /* Chat messages */
+        #left-chat-messages {
+            flex:1; overflow-y:auto; padding:12px 14px;
+            display:flex; flex-direction:column; gap:10px;
+        }
+        .chat-msg-wrap { display:flex; }
+        .chat-msg-wrap.user { justify-content: flex-end; }
+        .chat-msg-wrap.assistant { justify-content: flex-start; }
+        .chat-bubble {
+            max-width: 85%; font-size:13px; line-height:1.55; border-radius:12px; padding:9px 13px;
+        }
+        .chat-bubble.user {
+            background: linear-gradient(135deg,#6366F1,#7C3AED);
+            color:white; border-bottom-right-radius:3px;
+        }
+        .chat-bubble.assistant {
+            background: rgba(255,255,255,.06); color:#D1D5DB;
+            border-bottom-left-radius:3px;
+        }
+        .left-generating {
+            padding:16px 14px; text-align:center; color:#6B7280; font-size:13px;
+        }
+
+        /* Chat input */
+        #left-chat-input-wrap {
+            padding:12px 14px 14px; border-top:1px solid rgba(255,255,255,.07);
+            flex-shrink:0; background:#1C1C1E;
+        }
+        .chat-input-row {
+            display:flex; gap:8px; align-items:flex-end;
+        }
+        #left-chat-input {
+            flex:1; padding:10px 14px; background:#2C2C2E;
+            border:1px solid rgba(255,255,255,.1); border-radius:12px;
+            font-size:13px; font-family:'Inter',sans-serif; resize:none; outline:none;
+            height:42px; transition: border-color .2s; color:#E5E7EB;
+            line-height:1.4;
+        }
+        #left-chat-input::placeholder { color:#4B5563; }
+        #left-chat-input:focus { border-color:#6366F1; }
+        #left-send-btn {
+            width:38px; height:38px; padding:0; border:none;
+            background: linear-gradient(135deg,#6366F1,#A855F7); color:white;
+            border-radius:10px; font-size:16px; cursor:pointer;
+            transition: opacity .2s; flex-shrink:0; display:flex;
+            align-items:center; justify-content:center;
+        }
+        #left-send-btn:hover { opacity:.88; }
+        .save-indicator { font-size:11px; color:#4B5563; text-align:center; padding-top:8px; }
+
+        /* ── RIGHT PANEL ── */
+        #right-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#F8F9FA; }
+
+        /* Toolbar */
+        #doc-toolbar {
+            padding:7px 16px; border-bottom:1px solid #E5E7EB; display:flex;
+            align-items:center; gap:3px; flex-wrap:wrap; flex-shrink:0; background:white;
+        }
+        .tb-sep { width:1px; height:20px; background:#E5E7EB; margin:0 3px; }
+        .tb-btn {
+            height:28px; padding:0 7px; border:1px solid transparent; border-radius:5px;
+            background:none; cursor:pointer; font-size:13px; color:#374151;
+            display:flex; align-items:center; gap:4px; font-family:'Inter',sans-serif;
+            transition: background .12s, border-color .12s; white-space:nowrap;
+        }
+        .tb-btn:hover { background:#F3F4F6; border-color:#D1D5DB; }
+        .tb-btn.active { background:#EEF2FF; border-color:#6366F1; color:#4F46E5; }
+        .tb-select {
+            height:28px; padding:0 6px; border:1px solid #D1D5DB; border-radius:5px;
+            background:white; font-size:12px; color:#374151; font-family:'Inter',sans-serif;
+            cursor:pointer; outline:none;
+        }
+        .tb-select:hover { border-color:#6366F1; }
+
+        /* Export dropdown */
+        .export-wrap { position:relative; }
+        .export-menu {
+            position:absolute; top:36px; right:0; background:white; border:1px solid #E5E7EB;
+            border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.12); min-width:168px;
+            display:none; z-index:50; overflow:hidden;
+        }
+        .export-menu.show { display:block; }
+        .export-item {
+            padding:10px 16px; font-size:13px; color:#374151; cursor:pointer;
+            display:flex; align-items:center; gap:8px;
+        }
+        .export-item:hover { background:#F5F3FF; color:#4F46E5; }
+
+        /* Contract content */
+        #doc-content { flex:1; overflow-y:auto; padding:32px 36px; }
+        #contractContent {
+            max-width:860px; margin:0 auto; outline:none;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size:14px; line-height:1.9; color:#1a1a1a;
+            background:white; border-radius:12px;
+            padding:48px 56px; box-shadow:0 2px 12px rgba(0,0,0,.06);
+        }
+        #contractContent h1 {
+            font-size:18px; font-weight:700; text-align:center; margin-bottom:6px;
+            text-transform:uppercase; letter-spacing:.05em;
+        }
+        #contractContent h2 {
+            font-size:14px; font-weight:700; margin-top:28px; margin-bottom:10px;
+            text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #E5E7EB;
+            padding-bottom:4px;
+        }
+        #contractContent p { margin-bottom:14px; }
+        #contractContent ul, #contractContent ol { margin:8px 0 14px 24px; }
+        #contractContent ul { list-style-type: disc; }
+        #contractContent ol { list-style-type: decimal; }
+        #contractContent ul li, #contractContent ol li { display: list-item; }
+        #contractContent li { margin-bottom:6px; }
+        #contractContent strong { font-weight:700; }
+
+        /* Bracket highlights */
+        .bracket-field {
+            background:#FEF3C7; border-bottom:2px dashed #F59E0B;
+            border-radius:3px; cursor:text; padding:1px 3px;
+            transition: background .12s;
+        }
+        .bracket-field:focus { outline:2px solid #F59E0B; background:#FDE68A; border-radius:3px; }
+        .bracket-field.filled { background:transparent; border-bottom:none; }
+        .editable-highlight {
+            background:#FEF3C7; border-bottom:2px dashed #F59E0B;
+            border-radius:3px; cursor:text; padding:1px 3px; font-weight:normal;
+        }
+        .editable-highlight:focus { outline:2px solid #F59E0B; background:#FDE68A; }
+
+        /* AI edited */
+        .ai-edited { background:#ECFDF5; border-radius:2px; }
+
+        /* Inline popover */
+        #inline-popover {
+            position:fixed; background:white; border:1.5px solid #6366F1;
+            border-radius:14px; box-shadow:0 12px 32px rgba(99,102,241,.2);
+            padding:12px 14px; display:none; z-index:200; width:290px;
+        }
+        #inline-popover.show { display:block; animation: fadeSlideIn .15s ease; }
+        #inline-input {
+            width:100%; border:1.5px solid #E5E7EB; border-radius:9px; padding:9px 12px;
+            font-size:13px; font-family:'Inter',sans-serif; outline:none;
+        }
+        #inline-input:focus { border-color:#6366F1; }
+        .inline-actions { display:flex; gap:6px; margin-top:8px; }
+        .inline-cancel {
+            flex:1; padding:7px; border:1px solid #E5E7EB; border-radius:8px;
+            background:white; font-size:12px; cursor:pointer; color:#6B7280;
+            font-family:'Inter',sans-serif;
+        }
+        .inline-submit {
+            flex:2; padding:7px; border:none; border-radius:8px;
+            background:linear-gradient(135deg,#6366F1,#A855F7); color:white;
+            font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+        }
+
+        /* Generating — animated loading */
+        #doc-generating {
+            display:none; flex-direction:column; align-items:center; justify-content:center;
+            gap:24px; height:100%; padding: 40px 20px;
+        }
+        #doc-generating.show { display:flex; }
+        .gen-icon-wrap {
+            width: 88px; height: 88px;
+            background: linear-gradient(135deg, #EEF2FF, #F5F3FF);
+            border-radius: 28px; display:flex; align-items:center; justify-content:center;
+            animation: gen-pulse 2s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(99,102,241,.15);
+        }
+        .gen-icon { font-size: 40px; line-height: 1; }
+        @keyframes gen-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 32px rgba(99,102,241,.15); }
+            50% { transform: scale(1.06); box-shadow: 0 12px 40px rgba(99,102,241,.28); }
+        }
+        .gen-progress-bar {
+            width: 300px; height: 5px; background: #E5E7EB; border-radius: 6px; overflow:hidden;
+        }
+        .gen-progress-fill {
+            height: 100%; background: linear-gradient(90deg, #6366F1, #A855F7);
+            border-radius: 6px; width: 0%;
+        }
+        @keyframes gen-progress {
+            0%  { width: 0%; }
+            15% { width: 18%; }
+            35% { width: 38%; }
+            55% { width: 58%; }
+            75% { width: 74%; }
+            90% { width: 88%; }
+            100%{ width: 93%; }
+        }
+        .gen-status {
+            font-size: 19px; font-weight: 700; color: #111827; text-align: center;
+            transition: opacity 0.35s ease; letter-spacing: -.01em;
+        }
+        .gen-steps-list {
+            display: flex; flex-direction: column; gap: 8px; width: 320px;
+        }
+        .gen-step {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; color: #6B7280; padding: 6px 10px;
+            border-radius: 8px; transition: background .2s, color .2s;
+        }
+        .gen-step.active {
+            background: #EEF2FF; color: #4338CA; font-weight: 600;
+        }
+        .gen-step.done { color: #16A34A; }
+        .gen-step-icon { font-size: 16px; width: 20px; text-align: center; }
+        .gen-sub { font-size: 13px; color: #9CA3AF; text-align: center; margin-top: -8px; }
+        .spinner {
+            width:36px; height:36px; border:3px solid #E5E7EB;
+            border-top-color:#6366F1; border-radius:50%; animation: spin .8s linear infinite;
+        }
+
+        /* Settings modal */
+        #settings-modal {
+            position:fixed; inset:0; background:rgba(0,0,0,.45); display:none;
+            align-items:center; justify-content:center; z-index:300;
+        }
+        #settings-modal.show { display:flex; }
+        .settings-card {
+            background:white; border-radius:20px; padding:36px; width:440px;
+            box-shadow:0 24px 60px rgba(0,0,0,.22);
+        }
+
+        /* Animations */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeSlideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        .fade-in { animation: fadeIn .3s ease; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:3px; }
+        ::-webkit-scrollbar-thumb:hover { background:#9CA3AF; }
+        #left-panel ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); }
+        #left-panel ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.25); }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     ONBOARDING SCREEN
+═══════════════════════════════════ -->
+<div id="onboarding">
+    <div class="onboard-card">
+        <!-- Logo -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:32px;">
+            <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="10" fill="url(#og1)"/>
+                <!-- Document body -->
+                <rect x="9" y="10" width="18" height="22" rx="2" fill="white" fill-opacity="0.25"/>
+                <rect x="9" y="10" width="18" height="22" rx="2" stroke="white" stroke-opacity="0.5" stroke-width="1"/>
+                <!-- Document lines -->
+                <rect x="13" y="16" width="10" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <rect x="13" y="20" width="8" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <rect x="13" y="24" width="6" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <!-- AI Spark star at top-right -->
+                <path d="M28 8 L29.2 11.8 L33 13 L29.2 14.2 L28 18 L26.8 14.2 L23 13 L26.8 11.8 Z" fill="white"/>
+                <defs>
+                    <linearGradient id="og1" x1="0" y1="0" x2="40" y2="40">
+                        <stop stop-color="#6366F1"/>
+                        <stop offset="1" stop-color="#A855F7"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span style="font-size:23px;font-weight:800;color:#111827;letter-spacing:-.3px;">ClauseAI</span>
+        </div>
+
+        <h2 style="font-size:21px;font-weight:800;color:#111827;margin-bottom:6px;letter-spacing:-.3px;">Choose your AI provider</h2>
+        <p style="font-size:14px;color:#6B7280;margin-bottom:22px;line-height:1.6;">Generate professional contracts with AI or use our free templates — no account required.</p>
+
+        <!-- Claude option -->
+        <label class="radio-row" id="row-claude" onclick="selectProvider('claude')">
+            <input type="radio" name="provider" value="claude" id="radio-claude">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:14px;color:#111827;">Claude (Anthropic)</div>
+                <div style="font-size:12px;color:#9CA3AF;margin-top:1px;">claude-sonnet-4-5 · Best quality output</div>
+            </div>
+            <span style="font-size:18px;">✦</span>
+        </label>
+        <div class="key-input-wrap" id="key-wrap-claude">
+            <input class="key-input" type="password" id="key-claude" placeholder="Paste your Anthropic API key (sk-ant-...)">
+            <div class="billing-info show" id="billing-claude">
+                <div>⚡ <span class="billing-highlight">Takes 2 minutes to set up · $5 gets you 160+ contracts</span><br>
+                API credits are separate from Claude.ai — add them at<br>
+                <a href="https://console.anthropic.com/settings/billing" target="_blank">console.anthropic.com/settings/billing →</a></div>
+            </div>
+        </div>
+
+        <!-- OpenAI option -->
+        <label class="radio-row" id="row-openai" onclick="selectProvider('openai')">
+            <input type="radio" name="provider" value="openai" id="radio-openai">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:14px;color:#111827;">GPT (OpenAI)</div>
+                <div style="font-size:12px;color:#9CA3AF;margin-top:1px;">gpt-4o · Great quality, slightly lower cost</div>
+            </div>
+            <span style="font-size:18px;">⚡</span>
+        </label>
+        <div class="key-input-wrap" id="key-wrap-openai">
+            <input class="key-input" type="password" id="key-openai" placeholder="Paste your OpenAI API key (sk-...)">
+            <div class="billing-info show" id="billing-openai">
+                <div>⚡ <span class="billing-highlight">Takes 2 minutes to set up · $5 gets you 250+ contracts</span><br>
+                API credits are separate from ChatGPT — add them at<br>
+                <a href="https://platform.openai.com/settings/billing" target="_blank">platform.openai.com/settings/billing →</a></div>
+            </div>
+        </div>
+
+        <!-- No LLM option -->
+        <label class="radio-row" id="row-none" onclick="selectProvider('none')">
+            <input type="radio" name="provider" value="none" id="radio-none">
+            <div style="flex:1;">
+                <div style="font-weight:700;font-size:14px;color:#111827;">No AI — use templates</div>
+                <div style="font-size:12px;color:#9CA3AF;margin-top:1px;">Pre-built contract templates · No key needed · Free</div>
+            </div>
+            <span style="font-size:18px;">📄</span>
+        </label>
+        <div class="quality-warning" id="quality-warning">
+            <span>⚠️</span>
+            <span>Templates are good starting points, but AI-generated contracts are more tailored. Add a Claude or OpenAI key for best results — it only takes 2 minutes.</span>
+        </div>
+
+        <!-- Legal disclaimer -->
+        <div class="disclaimer-banner">
+            <span>⚖️</span>
+            <span><strong>Legal notice:</strong> Contracts generated by ClauseAI are AI-drafted and do not constitute legal advice. Have a licensed attorney review before signing.</span>
+        </div>
+
+        <button class="btn-primary" onclick="finishOnboarding()">Get Started →</button>
+
+        <p style="font-size:11px;color:#9CA3AF;text-align:center;margin-top:12px;">
+            Your API key is stored locally in your browser and sent directly to the AI provider. ClauseAI never sees it.
+        </p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MAIN APP
+═══════════════════════════════════ -->
+<div id="app">
+    <!-- Nav -->
+    <nav id="main-nav">
+        <a href="index.html" class="nav-logo">
+            <svg class="logo-mark" width="32" height="32" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="10" fill="url(#navGrad)"/>
+                <rect x="9" y="10" width="18" height="22" rx="2" fill="white" fill-opacity="0.25"/>
+                <rect x="9" y="10" width="18" height="22" rx="2" stroke="white" stroke-opacity="0.5" stroke-width="1"/>
+                <rect x="13" y="16" width="10" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <rect x="13" y="20" width="8" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <rect x="13" y="24" width="6" height="1.5" rx="1" fill="white" fill-opacity="0.7"/>
+                <path d="M28 8 L29.2 11.8 L33 13 L29.2 14.2 L28 18 L26.8 14.2 L23 13 L26.8 11.8 Z" fill="white"/>
+                <defs><linearGradient id="navGrad" x1="0" y1="0" x2="40" y2="40">
+                    <stop stop-color="#6366F1"/><stop offset="1" stop-color="#A855F7"/>
+                </linearGradient></defs>
+            </svg>
+            <span class="nav-logo-text">ClauseAI</span>
+        </a>
+        <div class="nav-right">
+            <span class="nav-provider-badge" id="nav-provider-badge"></span>
+            <button class="nav-btn" onclick="openSettings()">⚙ Settings</button>
+            <button class="nav-btn" onclick="newContract()" id="new-contract-btn" style="display:none;">+ New</button>
+        </div>
+    </nav>
+
+    <!-- Resume banner -->
+    <div id="resume-banner">
+        <span id="resume-text">You have a saved draft. Resume where you left off?</span>
+        <div style="display:flex;gap:8px;">
+            <button onclick="resumeDraft()" style="background:#1E40AF;color:white;border:none;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Resume</button>
+            <button onclick="dismissDraft()" style="background:none;border:1px solid #BFDBFE;color:#1E40AF;padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;">Dismiss</button>
+        </div>
+    </div>
+
+    <!-- ── INTAKE VIEW ── -->
+    <div id="intake-view">
+        <div class="intake-inner">
+            <h1 class="intake-title">Create a new <span class="highlight">agreement</span></h1>
+            <p class="intake-sub">Describe what you need in plain English — AI will draft a complete, professional contract.</p>
+
+            <div class="example-chips">
+                <button class="chip" onclick="setExample('I need a freelance web development contract. I\'m a developer building a custom website for a client.')">💻 Freelance web developer</button>
+                <button class="chip" onclick="setExample('Draft a cleaning service agreement for my residential cleaning business. Monthly service for a homeowner.')">🧹 Cleaning service</button>
+                <button class="chip" onclick="setExample('Create a farm goods sales agreement. I\'m a farmer selling produce to a grocery store buyer.')">🌾 Farm goods sales</button>
+            </div>
+
+            <textarea id="intake-textarea" placeholder="e.g. 'I need a freelance contract for a designer creating a brand identity for my startup, $3,000 flat fee...'"></textarea>
+            <div id="improve-preview" style="display:none;"></div>
+
+            <button id="revert-btn" onclick="revertPrompt()">↩ Revert to original</button>
+
+            <!-- API error banner -->
+            <div id="api-error-banner"></div>
+
+            <div class="intake-btn-row">
+                <div class="intake-btn-secondary">
+                    <button class="btn-improve" id="improve-btn" onclick="improvePrompt()" title="Let AI expand and structure your prompt">
+                        <span id="improve-icon">✦</span>
+                        <span id="improve-text">Improve</span>
+                    </button>
+                </div>
+                <button class="btn-go" id="go-btn" onclick="generateContract()">
+                    Generate Contract →
+                </button>
+            </div>
+
+            <p id="no-llm-note" style="display:none;margin-top:14px;font-size:12px;color:#9CA3AF;text-align:center;">
+                📄 Using template mode — <a href="#" onclick="openSettings();return false;" style="color:#6366F1;font-weight:600;">Add an API key</a> for AI-generated contracts.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── EDITOR VIEW ── -->
+    <div id="editor-view">
+
+        <!-- LEFT PANEL -->
+        <div id="left-panel">
+            <!-- Version bar -->
+            <div class="left-version-bar">
+                <div class="version-top-row">
+                    <span class="version-label" id="version-label">Version 1</span>
+                    <span class="version-time" id="version-time"></span>
+                </div>
+                <div class="left-action-row">
+                    <button class="left-action-btn" onclick="regenerateContract()" title="Regenerate from original prompt">↺ Regen</button>
+                    <button class="left-action-btn" onclick="newContract()" title="Start a new contract">+ New</button>
+                </div>
+            </div>
+
+            <!-- Suggestion chips (template mode / AI suggestions) -->
+            <div id="suggestion-chips">
+                <div class="chips-label">Ask a question</div>
+                <div id="chips-scroll-row"></div>
+            </div>
+
+            <!-- Chat messages -->
+            <div id="left-chat-messages">
+                <div class="chat-msg-wrap assistant">
+                    <div class="chat-bubble assistant">Your contract is ready. Ask me to adjust terms, add clauses, or change any section.</div>
+                </div>
+            </div>
+
+            <!-- Chat input -->
+            <div id="left-chat-input-wrap">
+                <div class="chat-input-row">
+                    <textarea id="left-chat-input" placeholder="Ask a question about your contract…" onkeydown="chatKeydown(event)" rows="1"></textarea>
+                    <button id="left-send-btn" onclick="sendChatMessage()" title="Send">→</button>
+                </div>
+                <div class="save-indicator" id="save-indicator"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div id="right-panel">
+            <!-- Toolbar -->
+            <div id="doc-toolbar">
+                <select class="tb-select" onchange="formatBlock(this.value)" title="Heading style" style="width:90px;">
+                    <option value="p">Normal</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                </select>
+                <select class="tb-select" onchange="applyFont(this.value)" title="Font family" style="width:100px;">
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Inter', sans-serif">Inter</option>
+                    <option value="'Courier New', monospace">Courier</option>
+                </select>
+                <select class="tb-select" onchange="applyFontSize(this.value)" title="Font size" style="width:56px;">
+                    <option value="2">10pt</option>
+                    <option value="3" selected>12pt</option>
+                    <option value="4">14pt</option>
+                    <option value="5">16pt</option>
+                    <option value="6">18pt</option>
+                </select>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" onclick="fmt('bold')" title="Bold"><strong>B</strong></button>
+                <button class="tb-btn" onclick="fmt('italic')" title="Italic"><em>I</em></button>
+                <button class="tb-btn" onclick="fmt('underline')" title="Underline" style="text-decoration:underline;">U</button>
+                <button class="tb-btn" onclick="fmt('strikeThrough')" title="Strikethrough" style="text-decoration:line-through;">S</button>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" onclick="fmt('insertUnorderedList')" title="Bullet list">≡</button>
+                <button class="tb-btn" onclick="fmt('insertOrderedList')" title="Numbered list">≔</button>
+                <button class="tb-btn" onclick="fmt('indent')" title="Indent">⇥</button>
+                <button class="tb-btn" onclick="fmt('outdent')" title="Outdent">⇤</button>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" onclick="insertLink()" title="Insert link">🔗</button>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" onclick="fmt('undo')" title="Undo">↩</button>
+                <button class="tb-btn" onclick="fmt('redo')" title="Redo">↪</button>
+                <div class="tb-sep"></div>
+                <button class="tb-btn" id="show-edits-btn" onclick="toggleShowEdits()" title="Highlight AI edits">Show edits</button>
+                <div style="flex:1;"></div>
+                <div class="export-wrap">
+                    <button class="tb-btn" onclick="toggleExportMenu()" id="export-btn" style="border:1.5px solid #6366F1;color:#4F46E5;font-weight:600;">
+                        Export ▾
+                    </button>
+                    <div class="export-menu" id="export-menu">
+                        <div class="export-item" onclick="exportPDF()">📄 Export as PDF</div>
+                        <div class="export-item" onclick="exportDOCX()">📝 Export as DOCX</div>
+                        <div class="export-item" onclick="downloadTxt()">📋 Download as .txt</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doc content area -->
+            <div id="doc-content">
+                <div id="doc-generating">
+                    <div class="gen-icon-wrap">
+                        <div class="gen-icon" id="gen-icon">📋</div>
+                    </div>
+                    <div class="gen-progress-bar">
+                        <div class="gen-progress-fill" id="gen-progress-fill"></div>
+                    </div>
+                    <div class="gen-status" id="gen-status">Reading your brief…</div>
+                    <div class="gen-steps-list" id="gen-steps-list"></div>
+                    <div class="gen-sub">AI is drafting your contract — usually takes 15–25 seconds</div>
+                </div>
+                <div id="contractContent" contenteditable="true" spellcheck="false"
+                     onmouseup="handleSelection(event)"
+                     onkeydown="handleContractKeydown(event)"
+                     oninput="scheduleAutoSave()">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── INLINE POPOVER ── -->
+<div id="inline-popover" onmousedown="event.preventDefault()">
+    <div style="font-size:12px;font-weight:700;color:#4F46E5;margin-bottom:8px;">✦ AI Edit</div>
+    <input id="inline-input" type="text" placeholder="Describe the change…" onkeydown="inlineKeydown(event)">
+    <div class="inline-actions">
+        <button class="inline-cancel" onclick="closeInlinePopover()">Cancel</button>
+        <button class="inline-submit" onclick="submitInlineEdit()">Rewrite →</button>
+    </div>
+</div>
+
+<!-- ── SETTINGS MODAL ── -->
+<div id="settings-modal" onclick="closeSettingsIfOutside(event)">
+    <div class="settings-card">
+        <h3 style="font-size:19px;font-weight:800;color:#111827;margin-bottom:4px;letter-spacing:-.3px;">⚙ Settings</h3>
+        <p style="font-size:13px;color:#6B7280;margin-bottom:20px;">Update your AI provider or API key.</p>
+
+        <div style="margin-bottom:12px;">
+            <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">AI Provider</label>
+            <select id="settings-provider" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;outline:none;font-family:'Inter',sans-serif;" onchange="settingsProviderChange()">
+                <option value="claude">Claude (Anthropic)</option>
+                <option value="openai">GPT (OpenAI)</option>
+                <option value="none">No AI — use templates</option>
+            </select>
+        </div>
+
+        <div id="settings-key-wrap" style="margin-bottom:8px;">
+            <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">API Key</label>
+            <input id="settings-key" type="password" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box;font-family:'Inter',sans-serif;" placeholder="Paste your API key...">
+        </div>
+
+        <div id="settings-billing-hint" style="font-size:12px;color:#6B7280;margin-bottom:20px;line-height:1.6;"></div>
+
+        <div style="display:flex;gap:8px;">
+            <button onclick="closeSettings()" style="flex:1;padding:10px;border:1.5px solid #E5E7EB;border-radius:10px;background:white;color:#374151;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+            <button onclick="saveSettings()" style="flex:2;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#6366F1,#A855F7);color:white;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════ -->
+<script src="contract-generator.js"></script>
+<script src="ai-client.js"></script>
+<script src="analytics.js"></script>
+<script>
+
+// ── App State ──
+const appState = {
+    phase: 'intake',
+    provider: '',
+    originalPrompt: '',
+    improvedPrompt: '',
+    contractHTML: '',
+    contractType: 'unknown',
+    suggestions: [],
+    chatHistory: [],
+    version: 1,
+    lastSaved: null
+};
+
+let savedSelection = null;
+let autoSaveTimer = null;
+let showEditsActive = false;
+let selectedProvider = '';
+
+// ── Onboarding ──
+function selectProvider(p) {
+    selectedProvider = p;
+    ['claude','openai','none'].forEach(id => {
+        document.getElementById('row-' + id).classList.toggle('selected', id === p);
+        document.getElementById('radio-' + id).checked = (id === p);
+    });
+    document.getElementById('key-wrap-claude').classList.toggle('show', p === 'claude');
+    document.getElementById('key-wrap-openai').classList.toggle('show', p === 'openai');
+    document.getElementById('quality-warning').classList.toggle('show', p === 'none');
+}
+
+function finishOnboarding() {
+    if (!selectedProvider) { showOnboardingError('Please choose an AI provider.'); return; }
+    let key = '';
+    if (selectedProvider === 'claude') key = document.getElementById('key-claude').value.trim();
+    if (selectedProvider === 'openai') key = document.getElementById('key-openai').value.trim();
+    if ((selectedProvider === 'claude' || selectedProvider === 'openai') && !key) {
+        showOnboardingError('Please paste your API key to continue.'); return;
+    }
+    localStorage.setItem('signflow_provider', selectedProvider);
+    localStorage.setItem('signflow_api_key', key);
+    AIClient.reload();
+    launchApp();
+}
+
+function showOnboardingError(msg) {
+    // Simple inline error under button — no alert()
+    const btn = document.querySelector('.btn-primary');
+    const existing = document.getElementById('onboard-error');
+    if (existing) existing.remove();
+    const err = document.createElement('p');
+    err.id = 'onboard-error';
+    err.style.cssText = 'color:#DC2626;font-size:13px;text-align:center;margin-top:8px;';
+    err.textContent = msg;
+    btn.after(err);
+    setTimeout(() => err.remove(), 3000);
+}
+
+function launchApp() {
+    const provider = localStorage.getItem('signflow_provider') || 'none';
+    appState.provider = provider;
+    document.getElementById('onboarding').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+    updateProviderBadge();
+    updateNoLLMNote();
+    checkResumeDraft();
+}
+
+function updateProviderBadge() {
+    const p = localStorage.getItem('signflow_provider') || 'none';
+    const labels = { claude: '✦ Claude', openai: '⚡ GPT-4o', none: '📄 Template' };
+    const badge = document.getElementById('nav-provider-badge');
+    badge.textContent = labels[p] || '';
+    badge.style.display = p ? 'inline-block' : 'none';
+}
+
+function updateNoLLMNote() {
+    const p = localStorage.getItem('signflow_provider') || 'none';
+    document.getElementById('no-llm-note').style.display = p === 'none' ? 'block' : 'none';
+    document.getElementById('improve-btn').style.display = p === 'none' ? 'none' : 'flex';
+}
+
+// ── API Error Banner (replaces alert) ──
+function showApiError(errMsg) {
+    const banner = document.getElementById('api-error-banner');
+    const lower = (errMsg || '').toLowerCase();
+    let html = '';
+    if (lower.includes('credit') || lower.includes('quota') || lower.includes('insufficient') || lower.includes('balance')) {
+        const provider = localStorage.getItem('signflow_provider') || 'claude';
+        const link = provider === 'openai'
+            ? 'https://platform.openai.com/settings/billing'
+            : 'https://console.anthropic.com/settings/billing';
+        const name = provider === 'openai' ? 'OpenAI' : 'Anthropic';
+        html = `💳 Your API credits are empty. <a href="${link}" target="_blank">Top up ${name} credits →</a> or <a href="#" onclick="openSettings();return false;">switch to template mode</a>.`;
+    } else if (lower.includes('invalid') || lower.includes('401') || lower.includes('auth') || lower.includes('key')) {
+        const provider = localStorage.getItem('signflow_provider') || 'claude';
+        const link = provider === 'openai'
+            ? 'https://platform.openai.com/api-keys'
+            : 'https://console.anthropic.com/settings/keys';
+        html = `🔑 Invalid API key. <a href="${link}" target="_blank">Check your key →</a> or <a href="#" onclick="openSettings();return false;">update it in Settings</a>.`;
+    } else {
+        html = `⚠️ ${errMsg}`;
+    }
+    banner.innerHTML = html;
+    banner.classList.add('show');
+}
+
+function hideApiError() {
+    document.getElementById('api-error-banner').classList.remove('show');
+}
+
+// ── Settings ──
+function openSettings() {
+    const p = localStorage.getItem('signflow_provider') || 'none';
+    const k = localStorage.getItem('signflow_api_key') || '';
+    document.getElementById('settings-provider').value = p;
+    document.getElementById('settings-key').value = k;
+    settingsProviderChange();
+    document.getElementById('settings-modal').classList.add('show');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+function closeSettingsIfOutside(e) { if (e.target === document.getElementById('settings-modal')) closeSettings(); }
+function settingsProviderChange() {
+    const p = document.getElementById('settings-provider').value;
+    document.getElementById('settings-key-wrap').style.display = p === 'none' ? 'none' : 'block';
+    const hints = {
+        claude: '⚡ Takes 2 min · $5 = 160+ contracts · <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:#2563EB;font-weight:600;">console.anthropic.com →</a>',
+        openai: '⚡ Takes 2 min · $5 = 250+ contracts · <a href="https://platform.openai.com/settings/billing" target="_blank" style="color:#2563EB;font-weight:600;">platform.openai.com →</a>',
+        none: 'Free templates — no API key needed.'
+    };
+    document.getElementById('settings-billing-hint').innerHTML = hints[p] || '';
+}
+function saveSettings() {
+    const p = document.getElementById('settings-provider').value;
+    const k = document.getElementById('settings-key').value.trim();
+    if ((p === 'claude' || p === 'openai') && !k) {
+        document.getElementById('settings-billing-hint').innerHTML = '<span style="color:#DC2626;">Please enter your API key.</span>';
+        return;
+    }
+    localStorage.setItem('signflow_provider', p);
+    localStorage.setItem('signflow_api_key', k);
+    AIClient.reload();
+    appState.provider = p;
+    updateProviderBadge();
+    updateNoLLMNote();
+    closeSettings();
+}
+
+// ── Example prompts ──
+function setExample(text) {
+    document.getElementById('intake-textarea').value = text;
+    hideApiError();
+}
+
+// ── Improve ──
+async function improvePrompt() {
+    const text = document.getElementById('intake-textarea').value.trim();
+    if (!text) { showApiError('Please describe the contract you need first.'); return; }
+    hideApiError();
+
+    // Store original for revert
+    appState.originalPrompt = text;
+
+    const btn = document.getElementById('improve-btn');
+    btn.disabled = true;
+    document.getElementById('improve-icon').textContent = '⟳';
+    document.getElementById('improve-text').textContent = 'Improving…';
+    document.getElementById('intake-textarea').value = '';
+    document.getElementById('revert-btn').classList.remove('show');
+
+    const messages = [{ role: 'user', content: text }];
+    let improved = '';
+
+    await AIClient.stream(messages, AIClient.SYSTEM_PROMPTS.IMPROVE, {
+        onChunk: (chunk) => {
+            improved += chunk;
+            document.getElementById('intake-textarea').value = improved;
+        },
+        onComplete: (full) => {
+            appState.improvedPrompt = full;
+            // Render highlighted preview and hide textarea
+            const preview = document.getElementById('improve-preview');
+            const highlighted = full.replace(/\[([^\]]+)\]/g, '<mark class="bracket-highlight">[$1]</mark>');
+            preview.innerHTML = '<div class="improve-preview-label">✦ AI Brief <span style="font-weight:400;color:#B45309">— fill in highlighted fields</span></div>' + highlighted.split('\n').map(line => `<div>${line || '&nbsp;'}</div>`).join('');
+            preview.style.display = 'block';
+            preview.classList.add('show');
+            document.getElementById('intake-textarea').style.display = 'none';
+            // Show revert button
+            document.getElementById('revert-btn').classList.add('show');
+            Analytics.trackImprove(appState.provider);
+        },
+        onError: (err) => {
+            showApiError(err.message);
+            document.getElementById('intake-textarea').value = text;
+            appState.originalPrompt = '';
+        }
+    });
+
+    btn.disabled = false;
+    document.getElementById('improve-icon').textContent = '✦';
+    document.getElementById('improve-text').textContent = 'Improve';
+}
+
+// ── Revert to original ──
+function revertPrompt() {
+    if (!appState.originalPrompt) return;
+    document.getElementById('intake-textarea').value = appState.originalPrompt;
+    document.getElementById('intake-textarea').style.display = '';
+    const preview = document.getElementById('improve-preview');
+    preview.classList.remove('show');
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    document.getElementById('revert-btn').classList.remove('show');
+    appState.originalPrompt = '';
+    appState.improvedPrompt = '';
+}
+
+// ── Generate Contract ──
+async function generateContract() {
+    // Use improved prompt if available, otherwise fall back to textarea
+    const rawPrompt = appState.improvedPrompt || document.getElementById('intake-textarea').value.trim();
+    const prompt = rawPrompt;
+    if (!prompt) { showApiError('Please describe the contract you need.'); return; }
+    hideApiError();
+
+    // Hide the improve preview and restore textarea for next time
+    const preview = document.getElementById('improve-preview');
+    preview.classList.remove('show');
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    document.getElementById('intake-textarea').style.display = '';
+
+    // Store original if not already stored (direct generate without improve)
+    if (!appState.originalPrompt) appState.originalPrompt = prompt;
+
+    appState.phase = 'generating';
+    appState.chatHistory = [];
+    appState.version = 1;
+    appState.suggestions = [];
+
+    // Hide revert btn (no longer relevant once generating)
+    document.getElementById('revert-btn').classList.remove('show');
+
+    // Show editor view
+    document.getElementById('intake-view').style.display = 'none';
+    document.getElementById('editor-view').classList.add('show');
+    document.getElementById('new-contract-btn').style.display = 'block';
+    document.getElementById('doc-generating').classList.add('show');
+    document.getElementById('contractContent').innerHTML = '';
+
+    // Clear suggestions
+    const chipsEl = document.getElementById('suggestion-chips');
+    chipsEl.classList.remove('show');
+    const scrollRow = document.getElementById('chips-scroll-row');
+    if (scrollRow) scrollRow.innerHTML = '';
+
+    document.getElementById('left-chat-messages').innerHTML = '<div class="left-generating"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto 10px;"></div>Drafting your contract…</div>';
+
+    startGenAnimation();
+
+    const provider = localStorage.getItem('signflow_provider') || 'none';
+
+    if (provider === 'none') {
+        generateFromTemplate(prompt);
+        return;
+    }
+
+    // Detect contract type
+    const lc = prompt.toLowerCase();
+    if (lc.includes('freelan') || lc.includes('contractor') || lc.includes('consultant') || lc.includes('independent')) appState.contractType = 'freelancer';
+    else if (lc.includes('product') || lc.includes('goods') || lc.includes('farm') || lc.includes('sales') || lc.includes('purchase')) appState.contractType = 'product';
+    else appState.contractType = 'service';
+
+    const messages = [{ role: 'user', content: prompt }];
+    let fullResponse = '';
+
+    await AIClient.stream(messages, AIClient.SYSTEM_PROMPTS.GENERATE, {
+        onChunk: (chunk) => { fullResponse += chunk; },
+        onComplete: (full) => {
+            fullResponse = full;
+            processGenerationResponse(fullResponse, prompt);
+            Analytics.trackGenerate(appState.provider, appState.contractType);
+        },
+        onError: (err) => {
+            console.error('Generation error:', err);
+            // Show error and fall back to template
+            showLeftPanelMessage('assistant', '⚠️ AI generation failed — using template instead. ' + err.message);
+            generateFromTemplate(prompt);
+        }
+    });
+}
+
+function processGenerationResponse(full, prompt) {
+    // No SUGGESTIONS parsing — use hardcoded defaults (set in finishGeneration path)
+    const htmlMatch = full.match(/CONTRACT_HTML_START\s*([\s\S]*?)\s*CONTRACT_HTML_END/);
+    let contractHTML = '';
+    if (htmlMatch) {
+        contractHTML = htmlMatch[1].trim();
+    } else {
+        // Try to use raw response if it looks like HTML
+        contractHTML = full.trim();
+        if (!contractHTML.includes('<')) {
+            generateFromTemplate(prompt);
+            return;
+        }
+    }
+
+    // Set default suggestions based on detected contract type
+    appState.suggestions = defaultSuggestions[appState.contractType] || defaultSuggestions.service;
+
+    appState.contractHTML = contractHTML;
+    renderContract(contractHTML);
+    renderSuggestions();
+    finishGeneration();
+}
+
+// ── Default suggestions (module scope — shared between AI and template paths) ──
+const defaultSuggestions = {
+    freelancer: [
+        'What does the intellectual property clause mean for me?',
+        'How does the kill fee work if the project ends early?',
+        'What is a non-solicitation clause and do I need one?',
+        'How many revision rounds am I entitled to?'
+    ],
+    product: [
+        'What does the warranty clause cover?',
+        'How does the dispute resolution process work?',
+        'What insurance do I need under this contract?',
+        'What happens if there is a force majeure event?'
+    ],
+    service: [
+        'What does the service level agreement require?',
+        'How do I cancel if this contract auto-renews?',
+        'What is the non-compete clause and how does it affect me?',
+        'How is my data protected under this contract?'
+    ]
+};
+
+function generateFromTemplate(prompt) {
+    const lc = prompt.toLowerCase();
+    const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+    contractData.businessName    = '[Your Name / Company]';
+    contractData.businessEmail   = '[your@email.com]';
+    contractData.clientName      = '[Client Name / Company]';
+    contractData.clientEmail     = '[client@email.com]';
+    contractData.services        = prompt;
+    contractData.deliverables    = prompt;
+    contractData.price           = '[Amount]';
+    contractData.paymentTerms    = '[Payment Terms]';
+    contractData.startDate       = '[Start Date]';
+    contractData.timeline        = '[Duration]';
+    contractData.frequency       = 'Monthly';
+    contractData.contractLength  = '1 year';
+    contractData.quantity        = '[Quantity]';
+    contractData.unitPrice       = '[Unit Price]';
+    contractData.deliveryDate    = '[Delivery Date]';
+    contractData.deliveryLocation = '[Delivery Location]';
+
+    let html = '';
+    const amplifiedScope = typeof amplifyScope === 'function' ? amplifyScope(prompt) : `<p>${prompt}</p>`;
+    const amplifiedDeliverables = typeof amplifyDeliverables === 'function' ? amplifyDeliverables(prompt) : '<p>As described in the scope above.</p>';
+
+    if (lc.includes('freelan') || lc.includes('contractor') || lc.includes('consultant')) {
+        contractData.scenario = 'freelancer';
+        html = typeof generateFreelancerContract === 'function' ? generateFreelancerContract(today, amplifiedScope, amplifiedDeliverables) : fallbackTemplate(today, prompt);
+        appState.contractType = 'freelancer';
+    } else if (lc.includes('product') || lc.includes('goods') || lc.includes('farm') || lc.includes('sales') || lc.includes('purchase')) {
+        contractData.scenario = 'product_seller';
+        html = typeof generateProductContract === 'function' ? generateProductContract(today, amplifiedScope, amplifiedDeliverables) : fallbackTemplate(today, prompt);
+        appState.contractType = 'product';
+    } else {
+        contractData.scenario = 'service_business';
+        html = typeof generateServiceContract === 'function' ? generateServiceContract(today, amplifiedScope, amplifiedDeliverables) : fallbackTemplate(today, prompt);
+        appState.contractType = 'service';
+    }
+
+    appState.contractHTML = html;
+
+    appState.suggestions = defaultSuggestions[appState.contractType] || defaultSuggestions.service;
+
+    renderContract(html);
+    renderSuggestions();
+    finishGeneration();
+    Analytics.trackGenerate('none', appState.contractType);
+}
+
+function fallbackTemplate(today, prompt) {
+    return `<h1>SERVICE AGREEMENT</h1>
+<p>This Service Agreement ("Agreement") is entered into as of ${today}, between <span class="bracket-field">[Service Provider Name]</span> ("Provider") and <span class="bracket-field">[Client Name]</span> ("Client").</p>
+<h2>1. Services</h2>
+<p>${prompt}</p>
+<h2>2. Compensation</h2>
+<p>Client shall pay Provider <span class="bracket-field">[$Amount]</span> per <span class="bracket-field">[month/project]</span>.</p>
+<h2>3. Term</h2>
+<p>This Agreement commences on <span class="bracket-field">[Start Date]</span> and continues for <span class="bracket-field">[Duration]</span>.</p>
+<h2>4. General Provisions</h2>
+<p>This Agreement constitutes the entire agreement between the parties. Governing law: <span class="bracket-field">[State]</span>.</p>
+<p><br>___________________________ &nbsp;&nbsp;&nbsp; ___________________________<br>
+Provider Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Client Signature<br>
+Date: _____________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _____________</p>`;
+}
+
+function renderContract(html) {
+    const el = document.getElementById('contractContent');
+    el.innerHTML = wrapBrackets(html);
+    setupBracketFields();
+}
+
+// ── Generation animation ──
+const generatingSteps = [
+    { icon: '📋', text: 'Reading your brief…' },
+    { icon: '⚖️', text: 'Applying legal standards…' },
+    { icon: '✍️', text: 'Drafting key clauses…' },
+    { icon: '🔍', text: 'Reviewing payment terms…' },
+    { icon: '📝', text: 'Adding signature blocks…' },
+    { icon: '✨', text: 'Polishing the language…' },
+    { icon: '🔒', text: 'Checking confidentiality terms…' },
+    { icon: '⚡', text: 'Almost there…' },
+];
+
+let genStatusInterval = null;
+
+function startGenAnimation() {
+    const statusEl = document.getElementById('gen-status');
+    const iconEl = document.getElementById('gen-icon');
+    if (!statusEl || !iconEl) return;
+
+    // Reset and restart progress bar animation
+    const fill = document.getElementById('gen-progress-fill');
+    if (fill) {
+        fill.style.animation = 'none';
+        fill.style.width = '0%';
+        void fill.offsetHeight; // force reflow
+        fill.style.animation = 'gen-progress 22s ease-in-out forwards';
+    }
+
+    // Set initial step
+    iconEl.textContent = generatingSteps[0].icon;
+    statusEl.textContent = generatingSteps[0].text;
+    statusEl.style.opacity = '1';
+
+    let step = 0;
+    if (genStatusInterval) clearInterval(genStatusInterval);
+    genStatusInterval = setInterval(() => {
+        statusEl.style.opacity = '0';
+        setTimeout(() => {
+            step = (step + 1) % generatingSteps.length;
+            iconEl.textContent = generatingSteps[step].icon;
+            statusEl.textContent = generatingSteps[step].text;
+            statusEl.style.opacity = '1';
+        }, 350);
+    }, 2500);
+}
+
+function stopGenAnimation() {
+    if (genStatusInterval) { clearInterval(genStatusInterval); genStatusInterval = null; }
+    const fill = document.getElementById('gen-progress-fill');
+    if (fill) {
+        fill.style.animation = 'none';
+        fill.style.width = '100%';
+    }
+    const statusEl = document.getElementById('gen-status');
+    if (statusEl) { statusEl.style.opacity = '0'; }
+}
+
+function finishGeneration() {
+    appState.phase = 'editing';
+    stopGenAnimation();
+    document.getElementById('doc-generating').classList.remove('show');
+    document.getElementById('contractContent').classList.add('fade-in');
+
+    const now = new Date();
+    document.getElementById('version-label').textContent = `Version ${appState.version}`;
+    document.getElementById('version-time').textContent = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+    document.getElementById('left-chat-messages').innerHTML = '';
+    addChatMessage('assistant', 'Your contract is ready. Ask me anything about it — I can explain clauses, suggest additions, or answer legal questions. To edit, click any text in the document.');
+
+    autoSave();
+}
+
+// ── Suggestion chips (horizontal pill row above chat input) ──
+function renderSuggestions() {
+    if (!appState.suggestions.length) return;
+    const scrollRow = document.getElementById('chips-scroll-row');
+    if (!scrollRow) return;
+    scrollRow.innerHTML = '';
+    // Show all suggestions as horizontal scrolling pills
+    appState.suggestions.forEach(s => {
+        const chip = document.createElement('button');
+        chip.className = 'suggestion-chip';
+        chip.innerHTML = `${s}<span class="suggestion-chip-arrow">→</span>`;
+        chip.onclick = () => applySuggestion(s, chip);
+        scrollRow.appendChild(chip);
+    });
+    document.getElementById('suggestion-chips').classList.add('show');
+}
+
+function applySuggestion(text, chipEl) {
+    // Dismiss this chip
+    if (chipEl) chipEl.style.opacity = '0.4';
+    document.getElementById('left-chat-input').value = text;
+    sendChatMessage();
+}
+
+// ── Bracket fields ──
+function wrapBrackets(html) {
+    return html.replace(/\[([^\]]+)\]/g, (match, inner) => {
+        return `<span class="bracket-field" tabindex="0">[${inner}]</span>`;
+    });
+}
+
+function setupBracketFields() {
+    document.querySelectorAll('.bracket-field, .editable-highlight').forEach(span => {
+        if (!span.hasAttribute('tabindex')) span.setAttribute('tabindex', '0');
+        span.addEventListener('click', function() {
+            const range = document.createRange();
+            range.selectNodeContents(this);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            this.focus();
+        });
+        span.addEventListener('keydown', function(e) {
+            if (e.key !== 'Tab') {
+                setTimeout(() => {
+                    this.classList.add('filled');
+                    this.removeAttribute('tabindex');
+                }, 0);
+            }
+        });
+    });
+}
+
+function handleContractKeydown(e) {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const fields = [...document.querySelectorAll('.bracket-field:not(.filled), .editable-highlight:not(.filled)')];
+        if (!fields.length) return;
+        const active = document.activeElement;
+        const idx = fields.indexOf(active);
+        const next = fields[idx + 1] || fields[0];
+        next.focus();
+        const range = document.createRange();
+        range.selectNodeContents(next);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+}
+
+// ── Inline selection popover ──
+function handleSelection(e) {
+    const provider = localStorage.getItem('signflow_provider') || 'none';
+    if (provider === 'none') return;
+
+    // Capture selection IMMEDIATELY at mouseup time, before any timeout can clear it
+    const sel = window.getSelection();
+    const text = sel ? sel.toString().trim() : '';
+    if (!text || text.length < 3) { closeInlinePopover(); return; }
+    savedSelection = sel.getRangeAt(0).cloneRange();
+
+    setTimeout(() => {
+        // Restore selection if browser cleared it during the delay
+        const currentSel = window.getSelection();
+        if (!currentSel || !currentSel.toString().trim()) {
+            currentSel.removeAllRanges();
+            currentSel.addRange(savedSelection);
+        }
+        const rect = savedSelection.getBoundingClientRect();
+        const pop = document.getElementById('inline-popover');
+        let top = rect.bottom + 8 + window.scrollY;
+        let left = rect.left + window.scrollX;
+        if (left + 300 > window.innerWidth) left = window.innerWidth - 306;
+        pop.style.top = top + 'px';
+        pop.style.left = left + 'px';
+        pop.classList.add('show');
+        document.getElementById('inline-input').value = '';
+        // Delay focus slightly to avoid deselecting text in the contract editor
+        setTimeout(() => document.getElementById('inline-input').focus(), 50);
+    }, 200);
+}
+
+function closeInlinePopover() {
+    document.getElementById('inline-popover').classList.remove('show');
+    savedSelection = null;
+}
+
+function inlineKeydown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); submitInlineEdit(); }
+    if (e.key === 'Escape') closeInlinePopover();
+}
+
+async function submitInlineEdit() {
+    const instruction = document.getElementById('inline-input').value.trim();
+    if (!instruction || !savedSelection) return;
+
+    // Save range reference locally BEFORE closeInlinePopover() sets savedSelection = null
+    const rangeToEdit = savedSelection;
+    const selectedText = rangeToEdit.toString().trim();
+
+    closeInlinePopover(); // sets savedSelection = null, but rangeToEdit still holds the ref
+
+    const systemPrompt = AIClient.SYSTEM_PROMPTS.INLINE_EDIT
+        .replace('{selected}', selectedText)
+        .replace('{instruction}', instruction);
+
+    const messages = [{ role: 'user', content: `Selected text: "${selectedText}"\n\nInstruction: ${instruction}` }];
+    let replacement = '';
+
+    await AIClient.stream(messages, systemPrompt, {
+        onChunk: (chunk) => { replacement += chunk; },
+        onComplete: (full) => {
+            replacement = full.trim();
+            try {
+                rangeToEdit.deleteContents();
+                const span = document.createElement('span');
+                span.className = 'ai-edited';
+                span.textContent = replacement;
+                rangeToEdit.insertNode(span);
+                appState.contractHTML = document.getElementById('contractContent').innerHTML;
+                scheduleAutoSave();
+                Analytics.trackInlineEdit(appState.provider);
+            } catch(err) {
+                showApiError('Could not apply edit: ' + err.message);
+            }
+        },
+        onError: (err) => { showApiError('Could not rewrite: ' + err.message); }
+    });
+}
+
+// ── Left panel chat ──
+function chatKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+}
+
+function contractToPlainText() {
+    const el = document.getElementById('contractContent');
+    if (!el) return appState.contractHTML.replace(/<[^>]+>/g, ' ');
+    // Clone DOM so we don't modify the live contract
+    const clone = el.cloneNode(true);
+    // Add newlines around headings so section names are clearly separated
+    clone.querySelectorAll('h1,h2,h3').forEach(h => {
+        h.textContent = '\n\n' + h.textContent + '\n';
+    });
+    clone.querySelectorAll('p').forEach(p => {
+        p.textContent = p.textContent + '\n';
+    });
+    clone.querySelectorAll('li').forEach(li => {
+        li.textContent = '• ' + li.textContent + '\n';
+    });
+    return clone.innerText.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('left-chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    addChatMessage('user', text);
+
+    const provider = localStorage.getItem('signflow_provider') || 'none';
+    if (provider === 'none') {
+        addChatMessage('assistant', 'AI refinement requires an API key. Add one in Settings.');
+        return;
+    }
+
+    const typingEl = addChatMessage('assistant', '…');
+
+    // Q&A mode: pass contract as plain text context in the system prompt
+    // Use contractToPlainText() to preserve section headings and structure
+    const contractPlainText = contractToPlainText();
+    const systemWithContract = AIClient.SYSTEM_PROMPTS.REFINE + '\n\nCurrent contract (for reference):\n' + contractPlainText.substring(0, 8000);
+    const messages = [
+        ...appState.chatHistory.slice(-6),
+        { role: 'user', content: text }
+    ];
+
+    let fullResponse = '';
+
+    await AIClient.stream(messages, systemWithContract, {
+        onChunk: (chunk) => {
+            fullResponse += chunk;
+            typingEl.textContent = fullResponse;
+        },
+        onComplete: (full) => {
+            // Q&A only — just display the response, no contract HTML parsing
+            typingEl.textContent = full.trim() || 'Here to help!';
+
+            appState.chatHistory.push({ role: 'user', content: text });
+            appState.chatHistory.push({ role: 'assistant', content: full.trim() });
+
+            // Scroll to bottom
+            const container = document.getElementById('left-chat-messages');
+            container.scrollTop = container.scrollHeight;
+
+            Analytics.trackRefine(appState.provider);
+        },
+        onError: (err) => {
+            typingEl.textContent = '⚠️ ' + err.message;
+        }
+    });
+}
+
+function addChatMessage(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = `chat-msg-wrap ${role}`;
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    const container = document.getElementById('left-chat-messages');
+    container.appendChild(wrap);
+    container.scrollTop = container.scrollHeight;
+    return bubble; // return bubble so caller can update text
+}
+
+function showLeftPanelMessage(role, text) {
+    document.getElementById('left-chat-messages').innerHTML = '';
+    addChatMessage(role, text);
+}
+
+// ── Toolbar ──
+function fmt(cmd) {
+    document.getElementById('contractContent').focus();
+    document.execCommand(cmd, false, null);
+}
+function formatBlock(tag) {
+    document.getElementById('contractContent').focus();
+    document.execCommand('formatBlock', false, tag);
+}
+function applyFont(font) {
+    document.getElementById('contractContent').focus();
+    document.execCommand('fontName', false, font);
+}
+function applyFontSize(size) {
+    document.getElementById('contractContent').focus();
+    document.execCommand('fontSize', false, size);
+}
+function insertLink() {
+    const url = prompt('Enter URL:');
+    if (url) {
+        document.getElementById('contractContent').focus();
+        document.execCommand('createLink', false, url);
+    }
+}
+function toggleShowEdits() {
+    showEditsActive = !showEditsActive;
+    document.getElementById('show-edits-btn').classList.toggle('active', showEditsActive);
+    document.querySelectorAll('.ai-edited').forEach(el => {
+        el.style.background = showEditsActive ? '#ECFDF5' : '';
+        el.style.outline = showEditsActive ? '1px solid #6EE7B7' : '';
+    });
+}
+
+// ── Export ──
+function toggleExportMenu() {
+    document.getElementById('export-menu').classList.toggle('show');
+}
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.export-wrap')) {
+        document.getElementById('export-menu').classList.remove('show');
+    }
+});
+
+async function exportPDF() {
+    document.getElementById('export-menu').classList.remove('show');
+    const btn = document.getElementById('export-btn');
+    btn.textContent = 'Exporting…';
+    btn.disabled = true;
+
+    try {
+        const el = document.getElementById('contractContent');
+        const clone = el.cloneNode(true);
+        clone.querySelectorAll('.bracket-field, .editable-highlight').forEach(s => {
+            s.style.background = 'transparent';
+            s.style.borderBottom = 'none';
+        });
+        clone.querySelectorAll('.ai-edited').forEach(s => { s.style.background = 'transparent'; });
+        clone.style.cssText = 'padding:40px;width:700px;position:absolute;left:-9999px;top:0;font-family:Georgia,serif;font-size:14px;line-height:1.9;color:#1a1a1a;background:white;';
+        document.body.appendChild(clone);
+
+        const canvas = await html2canvas(clone, { scale: 2, useCORS: true });
+        document.body.removeChild(clone);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'pt', 'letter');
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgW = pageW - 80;
+        const imgH = (canvas.height / canvas.width) * imgW;
+        let y = 40, remainH = imgH, srcY = 0;
+
+        while (remainH > 0) {
+            const sliceH = Math.min(pageH - 80, remainH);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = (sliceH / imgW) * canvas.width;
+            const ctx = sliceCanvas.getContext('2d');
+            ctx.drawImage(canvas, 0, srcY * (canvas.width / imgW), canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 40, y, imgW, sliceH);
+            remainH -= sliceH; srcY += sliceH;
+            if (remainH > 0) { pdf.addPage(); y = 40; }
+        }
+
+        pdf.save('ClauseAI_Contract.pdf');
+        Analytics.trackExport(appState.provider, 'pdf');
+    } catch(e) {
+        showApiError('PDF export failed: ' + e.message);
+    }
+
+    btn.textContent = 'Export ▾';
+    btn.disabled = false;
+}
+
+async function exportDOCX() {
+    document.getElementById('export-menu').classList.remove('show');
+    const btn = document.getElementById('export-btn');
+    btn.textContent = 'Exporting…';
+    btn.disabled = true;
+
+    try {
+        // docx library may be under window.docx or directly available
+        const docxLib = (typeof docx !== 'undefined') ? docx : window.docx;
+        if (!docxLib) throw new Error('docx library not loaded');
+        const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, UnderlineType, NumberingConfig, LevelFormat } = docxLib;
+        const el = document.getElementById('contractContent');
+        const children = [];
+
+        function parseNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                if (text.trim()) return [new TextRun({ text })];
+                return [];
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) return [];
+
+            const tag = node.tagName.toLowerCase();
+            const runs = [];
+            node.childNodes.forEach(child => {
+                const childRuns = parseNode(child);
+                childRuns.forEach(r => {
+                    if (tag === 'strong' || tag === 'b') r.bold = true;
+                    if (tag === 'em' || tag === 'i') r.italics = true;
+                    if (tag === 'u') r.underline = { type: UnderlineType.SINGLE };
+                    runs.push(r);
+                });
+            });
+
+            if (tag === 'h1') {
+                children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, children: [new TextRun({ text: node.textContent.trim(), bold: true })] }));
+            } else if (tag === 'h2') {
+                children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: node.textContent.trim(), bold: true })] }));
+            } else if (tag === 'h3') {
+                children.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: node.textContent.trim(), bold: true })] }));
+            } else if (tag === 'p') {
+                const textRuns = runs.length ? runs : [new TextRun({ text: node.textContent.trim() })];
+                if (textRuns.some(r => r.text && r.text.trim())) {
+                    children.push(new Paragraph({ children: textRuns, spacing: { after: 200 } }));
+                }
+            } else if (tag === 'ul' || tag === 'ol') {
+                node.querySelectorAll('li').forEach(li => {
+                    children.push(new Paragraph({ bullet: { level: 0 }, children: [new TextRun({ text: li.textContent.trim() })] }));
+                });
+            } else if (tag === 'div') {
+                // Handle div containers (used in template contracts for scope/deliverables)
+                // Process children so text inside divs isn't lost
+                node.childNodes.forEach(child => parseNode(child));
+            }
+            return runs;
+        }
+
+        el.childNodes.forEach(node => parseNode(node));
+        if (!children.length) children.push(new Paragraph({ children: [new TextRun({ text: el.innerText })] }));
+
+        const doc = new Document({ sections: [{ properties: {}, children }] });
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'ClauseAI_Contract.docx'; a.click();
+        URL.revokeObjectURL(url);
+        Analytics.trackExport(appState.provider, 'docx');
+    } catch(e) {
+        console.error('DOCX export error:', e);
+        showApiError('DOCX export failed: ' + e.message + '. Downloading as .txt instead.');
+        downloadTxt();
+    }
+
+    btn.textContent = 'Export ▾';
+    btn.disabled = false;
+}
+
+function downloadTxt() {
+    document.getElementById('export-menu').classList.remove('show');
+    const text = document.getElementById('contractContent').innerText;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ClauseAI_Contract.txt'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ── Regenerate ──
+async function regenerateContract() {
+    if (!appState.originalPrompt) return;
+    if (!confirm('Regenerate from your original prompt? Current edits will be lost.')) return;
+    document.getElementById('intake-textarea').value = appState.originalPrompt;
+    document.getElementById('editor-view').classList.remove('show');
+    document.getElementById('intake-view').style.display = '';
+    await generateContract();
+}
+
+// ── New contract ──
+function newContract() {
+    if (appState.phase === 'editing' && !confirm('Start a new contract? Your current draft is saved locally.')) return;
+    autoSave();
+    document.getElementById('editor-view').classList.remove('show');
+    document.getElementById('intake-view').style.display = '';
+    document.getElementById('new-contract-btn').style.display = 'none';
+    document.getElementById('intake-textarea').value = '';
+    document.getElementById('intake-textarea').style.display = '';
+    const previewEl = document.getElementById('improve-preview');
+    if (previewEl) { previewEl.classList.remove('show'); previewEl.style.display = 'none'; previewEl.innerHTML = ''; }
+    document.getElementById('revert-btn').classList.remove('show');
+    hideApiError();
+    appState.phase = 'intake';
+    appState.contractHTML = '';
+    appState.chatHistory = [];
+    appState.version = 1;
+    appState.suggestions = [];
+    appState.originalPrompt = '';
+    appState.improvedPrompt = '';
+}
+
+// ── Auto-save ──
+function scheduleAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 1500);
+}
+
+function autoSave() {
+    if (!appState.contractHTML) return;
+    appState.contractHTML = document.getElementById('contractContent').innerHTML;
+    appState.lastSaved = new Date().toISOString();
+    try {
+        localStorage.setItem('signflow_draft', JSON.stringify({ ...appState, savedAt: appState.lastSaved }));
+        document.getElementById('save-indicator').textContent = '💾 Saved · ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    } catch(e) {}
+}
+
+function checkResumeDraft() {
+    try {
+        const raw = localStorage.getItem('signflow_draft');
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (!draft.contractHTML) return;
+        const savedAt = draft.savedAt ? new Date(draft.savedAt) : null;
+        const timeStr = savedAt ? savedAt.toLocaleString() : 'earlier';
+        document.getElementById('resume-text').textContent = `You have a saved draft from ${timeStr}. Resume?`;
+        document.getElementById('resume-banner').classList.add('show');
+        window._pendingDraft = draft;
+    } catch(e) {}
+}
+
+function resumeDraft() {
+    const draft = window._pendingDraft;
+    if (!draft) return;
+    document.getElementById('resume-banner').classList.remove('show');
+    Object.assign(appState, draft);
+    document.getElementById('intake-view').style.display = 'none';
+    document.getElementById('editor-view').classList.add('show');
+    document.getElementById('new-contract-btn').style.display = 'block';
+    document.getElementById('doc-generating').classList.remove('show');
+    document.getElementById('version-label').textContent = `Version ${appState.version}`;
+    document.getElementById('version-time').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    renderContract(appState.contractHTML);
+    if (appState.suggestions && appState.suggestions.length) renderSuggestions();
+    document.getElementById('left-chat-messages').innerHTML = '';
+    addChatMessage('assistant', 'Welcome back! Your draft has been restored. What would you like to change?');
+    document.getElementById('save-indicator').textContent = '💾 Draft restored';
+}
+
+function dismissDraft() {
+    document.getElementById('resume-banner').classList.remove('show');
+    localStorage.removeItem('signflow_draft');
+    window._pendingDraft = null;
+}
+
+// ── Init ──
+(function init() {
+    const provider = localStorage.getItem('signflow_provider');
+    if (provider) {
+        AIClient.reload();
+        launchApp();
+    }
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('#inline-popover') && !e.target.closest('#contractContent')) {
+            closeInlinePopover();
+        }
+    });
+})();
+</script>
+</body>
+</html>
