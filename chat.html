@@ -67,6 +67,10 @@
             font-family: 'Inter', sans-serif; white-space: pre-wrap;
             min-height: 120px; margin-top: 0; color: #374151;
         }
+        #improve-content {
+            outline: none; cursor: text; min-height: 60px;
+        }
+        #improve-content:focus { outline: none; }
         #improve-preview.show { display: block; animation: fadeSlideIn .2s ease; }
         .bracket-highlight {
             background: #FEF3C7; border-bottom: 2px dashed #F59E0B;
@@ -1036,13 +1040,15 @@ async function improvePrompt() {
             // Render highlighted preview and hide textarea
             const preview = document.getElementById('improve-preview');
             const highlighted = full.replace(/\[([^\]]+)\]/g, '<mark class="bracket-highlight">[$1]</mark>');
-            preview.innerHTML = '<div class="improve-preview-label">✦ AI Brief <span style="font-weight:400;color:#B45309">— fill in highlighted fields</span></div>' + highlighted.split('\n').map(line => `<div>${line || '&nbsp;'}</div>`).join('');
+            const labelHTML = '<div class="improve-preview-label">✦ AI Brief <span style="font-weight:400;color:#B45309">— fill in highlighted fields</span></div>';
+            const contentHTML = '<div id="improve-content" contenteditable="true">' + highlighted.split('\n').map(line => `<div>${line || '<br>'}</div>`).join('') + '</div>';
+            preview.innerHTML = labelHTML + contentHTML;
             preview.style.display = 'block';
             preview.classList.add('show');
             document.getElementById('intake-textarea').style.display = 'none';
             // Show revert button
             document.getElementById('revert-btn').classList.add('show');
-            Analytics.trackImprove(appState.provider);
+            if (typeof Analytics !== 'undefined') Analytics.trackImprove(appState.provider);
         },
         onError: (err) => {
             showApiError(err.message);
@@ -1072,8 +1078,9 @@ function revertPrompt() {
 
 // ── Generate Contract ──
 async function generateContract() {
-    // Use improved prompt if available, otherwise fall back to textarea
-    const rawPrompt = appState.improvedPrompt || document.getElementById('intake-textarea').value.trim();
+    // Use edited improve-content if visible, else improved prompt, else textarea
+    const improveContent = document.getElementById('improve-content');
+    const rawPrompt = (improveContent ? improveContent.innerText.trim() : null) || appState.improvedPrompt || document.getElementById('intake-textarea').value.trim();
     const prompt = rawPrompt;
     if (!prompt) { showApiError('Please describe the contract you need.'); return; }
     hideApiError();
@@ -1134,7 +1141,7 @@ async function generateContract() {
         onComplete: (full) => {
             fullResponse = full;
             processGenerationResponse(fullResponse, prompt);
-            Analytics.trackGenerate(appState.provider, appState.contractType);
+            if (typeof Analytics !== 'undefined') Analytics.trackGenerate(appState.provider, appState.contractType);
         },
         onError: (err) => {
             console.error('Generation error:', err);
@@ -1237,7 +1244,7 @@ function generateFromTemplate(prompt) {
     renderContract(html);
     renderSuggestions();
     finishGeneration();
-    Analytics.trackGenerate('none', appState.contractType);
+    if (typeof Analytics !== 'undefined') Analytics.trackGenerate('none', appState.contractType);
 }
 
 function fallbackTemplate(today, prompt) {
