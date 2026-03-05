@@ -7,8 +7,8 @@
 
 const Analytics = {
   // Replace these placeholder values with your actual Supabase project details.
-  supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
-  supabaseAnonKey: 'YOUR_SUPABASE_ANON_KEY',
+  supabaseUrl: 'https://rgxujtzhsycsrvfnxylg.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJneHVqdHpoc3ljc3J2Zm54eWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzUwMzAsImV4cCI6MjA4ODMxMTAzMH0.k9S6GDHdROKH2d92bzIMxCE_TYTbr6f4nsGOycJr5ZU',
 
   /**
    * Stable anonymous session identifier.
