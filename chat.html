@@ -529,6 +529,32 @@
         ::-webkit-scrollbar-thumb:hover { background:#9CA3AF; }
         #left-panel ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); }
         #left-panel ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.25); }
+
+        /* ── Free-tier counter ── */
+        #free-counter { text-align:center; margin:10px 0 0; font-size:13px; color:#6B7280; }
+        .free-counter-text { background:#F3F4F6; border-radius:20px; padding:5px 14px; display:inline-block; }
+        #free-exhausted { background:#FEF2F2; border:1px solid #FECACA; border-radius:12px; padding:16px 20px; text-align:center; margin-top:14px; }
+        #free-exhausted p { font-size:14px; color:#374151; margin:0 0 10px; }
+        #free-exhausted .exhausted-title { font-size:16px; font-weight:700; color:#991B1B; margin-bottom:6px; }
+        #free-exhausted .exhausted-cta { background:linear-gradient(135deg,#6366F1,#8B5CF6); color:white; border:none; border-radius:10px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; margin-bottom:8px; width:100%; }
+        #free-exhausted .exhausted-note { font-size:12px; color:#9CA3AF; }
+
+        /* ── Email gate modal ── */
+        #email-gate-modal { position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:500; }
+        #email-gate-modal.show { display:flex; animation:fadeSlideIn .2s ease; }
+        .gate-card { background:white; border-radius:22px; padding:38px 40px; width:460px; max-width:calc(100vw - 32px); box-shadow:0 32px 80px rgba(0,0,0,.28); }
+        .gate-title { font-size:22px; font-weight:800; color:#111827; letter-spacing:-.3px; margin-bottom:8px; }
+        .gate-sub { font-size:14px; color:#6B7280; margin-bottom:18px; line-height:1.6; }
+        .gate-bullets { list-style:none; padding:0; margin:0 0 20px; }
+        .gate-bullets li { font-size:13.5px; color:#374151; padding:5px 0; display:flex; align-items:center; gap:8px; }
+        .gate-bullets li::before { content:'✓'; color:#10B981; font-weight:800; flex-shrink:0; }
+        .gate-input { width:100%; padding:12px 14px; border:1.5px solid #D1D5DB; border-radius:10px; font-size:14px; font-family:'Inter',sans-serif; outline:none; box-sizing:border-box; margin-bottom:8px; transition:border-color .2s,box-shadow .2s; }
+        .gate-input:focus { border-color:#6366F1; box-shadow:0 0 0 3px rgba(99,102,241,.1); }
+        .gate-btn { width:100%; padding:13px; border:none; border-radius:12px; background:linear-gradient(135deg,#6366F1,#8B5CF6); color:white; font-size:15px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
+        .gate-btn:disabled { opacity:.6; cursor:not-allowed; }
+        .gate-error { font-size:13px; color:#EF4444; margin-bottom:8px; display:none; }
+        .gate-error.show { display:block; }
+        .gate-beta-note { font-size:12px; color:#9CA3AF; text-align:center; line-height:1.5; margin-top:12px; }
     </style>
 </head>
 <body>
@@ -681,6 +707,19 @@
             <div id="improve-preview" style="display:none;"></div>
 
             <button id="revert-btn" onclick="revertPrompt()">↩ Revert to original</button>
+
+            <!-- Free-tier counter -->
+            <div id="free-counter" style="display:none;">
+                <span class="free-counter-text">✦ <span id="free-count-num">3</span>/3 free AI contracts remaining this month</span>
+            </div>
+
+            <!-- Free-tier exhausted banner -->
+            <div id="free-exhausted" style="display:none;">
+                <div class="exhausted-title">🔒 You've used your 3 free contracts this month</div>
+                <p>Add your own API key to continue generating unlimited AI contracts, or use the free template generator.</p>
+                <button class="exhausted-cta" onclick="showProviderOnboarding()">Add your own API key to continue →</button>
+                <div class="exhausted-note">Free tier resets on the 1st of each month</div>
+            </div>
 
             <!-- API error banner -->
             <div id="api-error-banner"></div>
@@ -858,6 +897,25 @@
 </div>
 
 <!-- ═══════════════════════════════════
+     EMAIL GATE MODAL
+═══════════════════════════════════ -->
+<div id="email-gate-modal" onclick="gateClickOutside(event)">
+    <div class="gate-card" id="gate-card">
+        <div class="gate-title">Your contract is ready — almost there!</div>
+        <p class="gate-sub">Enter your email to instantly unlock 3 free AI-generated contracts per month. No credit card. No commitment.</p>
+        <ul class="gate-bullets">
+            <li>Get your contract in under 60 seconds</li>
+            <li>3 free AI contracts every month — no card needed</li>
+            <li>ClauseAI is in beta, your feedback helps us improve</li>
+        </ul>
+        <input class="gate-input" id="gate-email-input" type="email" placeholder="your@email.com" onkeydown="gateKeydown(event)">
+        <div class="gate-error" id="gate-error"></div>
+        <button class="gate-btn" id="gate-submit-btn" onclick="submitEmailGate()">Generate My Contract →</button>
+        <p class="gate-beta-note">We'll never spam you. Unsubscribe anytime.</p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════
      SCRIPTS
 ═══════════════════════════════════ -->
 <script src="contract-generator.js"></script>
@@ -931,11 +989,27 @@ function launchApp() {
     updateProviderBadge();
     updateNoLLMNote();
     checkResumeDraft();
+    // Load counter for free-tier users
+    if (provider === 'free_tier') {
+        const count = getLocalCount();
+        updateCounterUI(count);
+        // Also sync with Supabase if email is known
+        const email = localStorage.getItem(GATE_EMAIL_KEY);
+        if (email) {
+            supabaseFetchUser(email).then(remote => {
+                if (remote !== null) {
+                    const synced = Math.max(count, remote.count);
+                    setLocalCount(synced);
+                    updateCounterUI(synced);
+                }
+            });
+        }
+    }
 }
 
 function updateProviderBadge() {
     const p = localStorage.getItem('signflow_provider') || 'none';
-    const labels = { claude: '✦ Claude', openai: '⚡ GPT-4o', none: '📄 Template' };
+    const labels = { claude: '✦ Claude', openai: '⚡ GPT-4o', none: '📄 Template', free_tier: '✦ Free AI' };
     const badge = document.getElementById('nav-provider-badge');
     badge.textContent = labels[p] || '';
     badge.style.display = p ? 'inline-block' : 'none';
@@ -944,7 +1018,7 @@ function updateProviderBadge() {
 function updateNoLLMNote() {
     const p = localStorage.getItem('signflow_provider') || 'none';
     document.getElementById('no-llm-note').style.display = p === 'none' ? 'block' : 'none';
-    document.getElementById('improve-btn').style.display = p === 'none' ? 'none' : 'flex';
+    document.getElementById('improve-btn').style.display = (p === 'none') ? 'none' : 'flex';
 }
 
 // ── API Error Banner (replaces alert) ──
@@ -974,6 +1048,225 @@ function showApiError(errMsg) {
 
 function hideApiError() {
     document.getElementById('api-error-banner').classList.remove('show');
+}
+
+// ════════════════════════════════════════════════
+// FREE TIER — EMAIL GATE + USAGE COUNTING
+// ════════════════════════════════════════════════
+
+const GATE_EMAIL_KEY = 'clauseai_email';
+const GATE_COUNT_KEY = 'clauseai_count';
+const GATE_MONTH_KEY = 'clauseai_month';
+const GATE_MAX_FREE  = 3;
+const GATE_SUPA_URL  = 'https://rgxujtzhsycsrvfnxylg.supabase.co';
+const GATE_SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJneHVqdHpoc3ljc3J2Zm54eWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MzUwMzAsImV4cCI6MjA4ODMxMTAzMH0.k9S6GDHdROKH2d92bzIMxCE_TYTbr6f4nsGOycJr5ZU';
+const PROXY_URL      = '/.netlify/functions/generate';
+let _gateResolve = null;
+
+function currentMonthYear() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function getLocalCount() {
+    const storedMonth = localStorage.getItem(GATE_MONTH_KEY);
+    if (storedMonth !== currentMonthYear()) {
+        localStorage.setItem(GATE_COUNT_KEY, '0');
+        localStorage.setItem(GATE_MONTH_KEY, currentMonthYear());
+        return 0;
+    }
+    return parseInt(localStorage.getItem(GATE_COUNT_KEY) || '0', 10);
+}
+
+function setLocalCount(n) {
+    localStorage.setItem(GATE_COUNT_KEY, String(n));
+    localStorage.setItem(GATE_MONTH_KEY, currentMonthYear());
+}
+
+function showEmailGateModal() {
+    document.getElementById('email-gate-modal').classList.add('show');
+    setTimeout(() => {
+        const inp = document.getElementById('gate-email-input');
+        if (inp) inp.focus();
+    }, 150);
+}
+function hideEmailGateModal() {
+    document.getElementById('email-gate-modal').classList.remove('show');
+    const err = document.getElementById('gate-error');
+    if (err) { err.classList.remove('show'); err.textContent = ''; }
+}
+
+function gateClickOutside(e) {
+    // Do not close gate on outside click — user must submit email
+}
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function gateKeydown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); submitEmailGate(); }
+}
+
+async function supabaseUpsertUser(email, count, monthYear) {
+    try {
+        await fetch(`${GATE_SUPA_URL}/rest/v1/users`, {
+            method: 'POST',
+            headers: {
+                'apikey': GATE_SUPA_KEY,
+                'Authorization': `Bearer ${GATE_SUPA_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=minimal'
+            },
+            body: JSON.stringify({ email, monthly_count: count, month_year: monthYear })
+        });
+    } catch (_) { /* silent fail */ }
+}
+
+async function supabaseFetchUser(email) {
+    try {
+        const res = await fetch(
+            `${GATE_SUPA_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=monthly_count,month_year&limit=1`,
+            { headers: { 'apikey': GATE_SUPA_KEY, 'Authorization': `Bearer ${GATE_SUPA_KEY}` } }
+        );
+        if (!res.ok) return null;
+        const rows = await res.json();
+        if (!rows || !rows.length) return null;
+        const row = rows[0];
+        if (row.month_year !== currentMonthYear()) return { count: 0 };
+        return { count: row.monthly_count || 0 };
+    } catch (_) { return null; }
+}
+
+async function supabaseIncrementUser(email, newCount) {
+    try {
+        await fetch(`${GATE_SUPA_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': GATE_SUPA_KEY,
+                'Authorization': `Bearer ${GATE_SUPA_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ monthly_count: newCount, month_year: currentMonthYear() })
+        });
+    } catch (_) { /* silent fail */ }
+}
+
+async function checkAndGateUser() {
+    let email = localStorage.getItem(GATE_EMAIL_KEY);
+    if (!email) {
+        // Show gate modal, wait for submission
+        const result = await new Promise(resolve => {
+            _gateResolve = resolve;
+            showEmailGateModal();
+        });
+        email = result.email;
+        if (result.count >= GATE_MAX_FREE) {
+            showProviderOnboarding();
+            return false;
+        }
+        return true;
+    }
+    // Email known — reconcile local + remote count
+    let count = getLocalCount();
+    const remote = await supabaseFetchUser(email);
+    if (remote !== null) {
+        count = Math.max(count, remote.count);
+        setLocalCount(count);
+    }
+    updateCounterUI(count);
+    if (count >= GATE_MAX_FREE) {
+        showProviderOnboarding();
+        return false;
+    }
+    return true;
+}
+
+async function submitEmailGate() {
+    const emailEl = document.getElementById('gate-email-input');
+    const errEl   = document.getElementById('gate-error');
+    const btn     = document.getElementById('gate-submit-btn');
+    const email   = emailEl.value.trim().toLowerCase();
+
+    if (!email || !isValidEmail(email)) {
+        errEl.textContent = 'Please enter a valid email address.';
+        errEl.classList.add('show');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Almost there…';
+    errEl.classList.remove('show');
+
+    localStorage.setItem(GATE_EMAIL_KEY, email);
+
+    const remote = await supabaseFetchUser(email);
+    const monthYear = currentMonthYear();
+    let realCount = 0;
+    if (remote !== null) {
+        realCount = remote.count;
+        setLocalCount(realCount);
+    } else {
+        realCount = getLocalCount();
+    }
+
+    await supabaseUpsertUser(email, realCount, monthYear);
+
+    btn.disabled = false;
+    btn.textContent = 'Generate My Contract →';
+    hideEmailGateModal();
+
+    if (_gateResolve) {
+        _gateResolve({ email, count: realCount });
+        _gateResolve = null;
+    }
+}
+
+async function incrementUserCount(email) {
+    if (!email) return;
+    const newCount = getLocalCount() + 1;
+    setLocalCount(newCount);
+    updateCounterUI(newCount);
+    await supabaseIncrementUser(email, newCount);
+}
+
+function updateCounterUI(count) {
+    const provider = localStorage.getItem('signflow_provider');
+    if (provider !== 'free_tier') return;
+    const remaining = Math.max(0, GATE_MAX_FREE - count);
+    const numEl = document.getElementById('free-count-num');
+    const counterEl = document.getElementById('free-counter');
+    const exhaustedEl = document.getElementById('free-exhausted');
+    const goBtn = document.getElementById('go-btn');
+    const improveBtn = document.getElementById('improve-btn');
+    if (numEl) numEl.textContent = remaining;
+    if (counterEl) counterEl.style.display = remaining > 0 ? 'block' : 'none';
+    if (exhaustedEl) exhaustedEl.style.display = remaining === 0 ? 'block' : 'none';
+    if (goBtn) goBtn.style.display = remaining === 0 ? 'none' : '';
+    if (improveBtn) improveBtn.style.display = remaining === 0 ? 'none' : 'flex';
+}
+
+function showProviderOnboarding() {
+    document.getElementById('intake-view').style.display = 'none';
+    document.getElementById('editor-view').classList.remove('show');
+    document.getElementById('app').classList.remove('show');
+    document.getElementById('onboarding').style.display = 'flex';
+}
+
+async function generateViaProxy(messages, systemPrompt) {
+    const res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, systemPrompt })
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Generation failed. Please try again.');
+    }
+    const data = await res.json();
+    if (!data.content) throw new Error('Empty response from server.');
+    return data.content;
 }
 
 // ── Settings ──
@@ -1093,6 +1386,13 @@ async function generateContract() {
     if (!prompt) { showApiError('Please describe the contract you need.'); return; }
     hideApiError();
 
+    // ── Free-tier gate check ──
+    const _provider = localStorage.getItem('signflow_provider') || 'free_tier';
+    if (_provider === 'free_tier') {
+        const canProceed = await checkAndGateUser();
+        if (!canProceed) return;
+    }
+
     // Hide the improve preview and restore textarea for next time
     const preview = document.getElementById('improve-preview');
     preview.classList.remove('show');
@@ -1128,7 +1428,7 @@ async function generateContract() {
 
     startGenAnimation();
 
-    const provider = localStorage.getItem('signflow_provider') || 'none';
+    const provider = localStorage.getItem('signflow_provider') || 'free_tier';
 
     if (provider === 'none') {
         generateFromTemplate(prompt);
@@ -1142,8 +1442,25 @@ async function generateContract() {
     else appState.contractType = 'service';
 
     const messages = [{ role: 'user', content: prompt }];
-    let fullResponse = '';
 
+    if (provider === 'free_tier') {
+        // ── Free tier: use Netlify proxy with site owner's Claude key ──
+        try {
+            const content = await generateViaProxy(messages, AIClient.SYSTEM_PROMPTS.GENERATE);
+            processGenerationResponse(content, prompt);
+            const email = localStorage.getItem(GATE_EMAIL_KEY);
+            await incrementUserCount(email);
+            if (typeof Analytics !== 'undefined') Analytics.trackGenerate('free_tier', appState.contractType);
+        } catch (err) {
+            console.error('Free tier generation error:', err);
+            showLeftPanelMessage('assistant', '⚠️ AI generation failed — using template instead. ' + err.message);
+            generateFromTemplate(prompt);
+        }
+        return;
+    }
+
+    // ── BYOK: user's own Claude/OpenAI key ──
+    let fullResponse = '';
     await AIClient.stream(messages, AIClient.SYSTEM_PROMPTS.GENERATE, {
         onChunk: (chunk) => { fullResponse += chunk; },
         onComplete: (full) => {
@@ -1153,7 +1470,6 @@ async function generateContract() {
         },
         onError: (err) => {
             console.error('Generation error:', err);
-            // Show error and fall back to template
             showLeftPanelMessage('assistant', '⚠️ AI generation failed — using template instead. ' + err.message);
             generateFromTemplate(prompt);
         }
@@ -1256,6 +1572,60 @@ function generateFromTemplate(prompt) {
 }
 
 function fallbackTemplate(today, prompt) {
+    const lc = prompt.toLowerCase();
+    const isFreelancer = /freelan|contractor|consultant|independent/.test(lc);
+    const isGoods = /product|goods|farm|sale|purchase|sell|merchandise/.test(lc);
+    const title  = isFreelancer ? 'INDEPENDENT CONTRACTOR AGREEMENT'
+                 : isGoods      ? 'GOODS SALE AGREEMENT'
+                 : 'SERVICE AGREEMENT';
+    const party1 = isFreelancer ? 'Contractor' : isGoods ? 'Seller'  : 'Provider';
+    const party2 = isGoods      ? 'Buyer'      : 'Client';
+    const p1role = party1;
+    const p2role = party2;
+
+    if (isGoods) {
+        return `<h1>GOODS SALE AGREEMENT</h1>
+<p>This Goods Sale Agreement ("Agreement") is entered into as of ${today}, between <span class="bracket-field">[Seller Name]</span> ("Seller") and <span class="bracket-field">[Buyer Name]</span> ("Buyer").</p>
+<h2>1. Goods Description</h2>
+<p>${prompt}</p>
+<h2>2. Purchase Price</h2>
+<p>Buyer shall pay Seller <span class="bracket-field">[$Total Amount]</span> for the goods described above.</p>
+<h2>3. Payment Terms</h2>
+<p>Payment is due within <span class="bracket-field">[Net 30/Net 15/upon delivery]</span>. Late payments accrue interest at 1.5% per month after 15 days.</p>
+<h2>4. Delivery Terms</h2>
+<p>Seller shall deliver the goods by <span class="bracket-field">[Delivery Date]</span> to <span class="bracket-field">[Delivery Address]</span>. Delivery is FOB Seller's facility unless otherwise agreed.</p>
+<h2>5. Title &amp; Risk of Loss</h2>
+<p>Title to and risk of loss of the goods shall pass to Buyer upon delivery and full payment.</p>
+<h2>6. General Provisions</h2>
+<p>This Agreement constitutes the entire agreement between the parties. Governing law: <span class="bracket-field">[State]</span>.</p>
+<p><br>___________________________ &nbsp;&nbsp;&nbsp; ___________________________<br>
+Seller Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Buyer Signature<br>
+Date: _____________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _____________</p>`;
+    }
+
+    if (isFreelancer) {
+        return `<h1>INDEPENDENT CONTRACTOR AGREEMENT</h1>
+<p>This Independent Contractor Agreement ("Agreement") is entered into as of ${today}, between <span class="bracket-field">[Contractor Name]</span> ("Contractor") and <span class="bracket-field">[Client Name]</span> ("Client").</p>
+<h2>1. Services</h2>
+<p>${prompt}</p>
+<h2>2. Compensation</h2>
+<p>Client shall pay Contractor <span class="bracket-field">[$Amount]</span> per <span class="bracket-field">[hour/project/month]</span>.</p>
+<h2>3. Independent Contractor Status</h2>
+<p>Contractor is an independent contractor and not an employee of Client. Contractor is responsible for all taxes on compensation received under this Agreement.</p>
+<h2>4. Intellectual Property</h2>
+<p>All work product created by Contractor under this Agreement shall be the sole property of Client upon full payment.</p>
+<h2>5. Confidentiality</h2>
+<p>Contractor shall keep all Client information confidential during and for 2 years after termination of this Agreement.</p>
+<h2>6. Term &amp; Termination</h2>
+<p>This Agreement commences on <span class="bracket-field">[Start Date]</span> and may be terminated by either party with <span class="bracket-field">[14/30]</span> days written notice.</p>
+<h2>7. General Provisions</h2>
+<p>This Agreement constitutes the entire agreement between the parties. Governing law: <span class="bracket-field">[State]</span>.</p>
+<p><br>___________________________ &nbsp;&nbsp;&nbsp; ___________________________<br>
+Contractor Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Client Signature<br>
+Date: _____________ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: _____________</p>`;
+    }
+
+    // Default: Service Agreement
     return `<h1>SERVICE AGREEMENT</h1>
 <p>This Service Agreement ("Agreement") is entered into as of ${today}, between <span class="bracket-field">[Service Provider Name]</span> ("Provider") and <span class="bracket-field">[Client Name]</span> ("Client").</p>
 <h2>1. Services</h2>
@@ -1264,7 +1634,9 @@ function fallbackTemplate(today, prompt) {
 <p>Client shall pay Provider <span class="bracket-field">[$Amount]</span> per <span class="bracket-field">[month/project]</span>.</p>
 <h2>3. Term</h2>
 <p>This Agreement commences on <span class="bracket-field">[Start Date]</span> and continues for <span class="bracket-field">[Duration]</span>.</p>
-<h2>4. General Provisions</h2>
+<h2>4. Confidentiality</h2>
+<p>Each party shall maintain the confidentiality of the other's proprietary information during and for 2 years after this Agreement.</p>
+<h2>5. General Provisions</h2>
 <p>This Agreement constitutes the entire agreement between the parties. Governing law: <span class="bracket-field">[State]</span>.</p>
 <p><br>___________________________ &nbsp;&nbsp;&nbsp; ___________________________<br>
 Provider Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Client Signature<br>
@@ -1861,10 +2233,12 @@ function dismissDraft() {
 // ── Init ──
 (function init() {
     const provider = localStorage.getItem('signflow_provider');
-    if (provider) {
-        AIClient.reload();
-        launchApp();
+    if (!provider) {
+        // New user — default to free AI tier, skip onboarding
+        localStorage.setItem('signflow_provider', 'free_tier');
     }
+    AIClient.reload();
+    launchApp();
     document.addEventListener('mousedown', (e) => {
         if (!e.target.closest('#inline-popover') && !e.target.closest('#contractContent')) {
             closeInlinePopover();

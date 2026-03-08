@@ -169,6 +169,7 @@ function amplifyScope(briefDescription) {
     const isMarketing = /market|social|content|seo|campaign|advertis|promotion/.test(lower);
     const isDevelopment = /develop|code|software|program|engineer|build/.test(lower);
     const isWriting = /writ|content|copy|article|blog|documentation/.test(lower);
+    const isGoods = /goods|farm|crop|produce|product|manufactur|wholesale|retail|inventory|merchandise|commodity/.test(lower);
     
     let amplified = '';
     
@@ -316,6 +317,23 @@ function amplifyScope(briefDescription) {
 • <strong>Delivery:</strong> Content delivered in specified format (Google Docs, Word, CMS, etc.), clean, properly formatted final files, source links and references provided, and usage rights transferred upon final payment`;
     }
     
+    // GOODS / PRODUCTS / AGRICULTURAL
+    else if (isGoods) {
+        amplified = `Seller agrees to provide the following goods in accordance with the specifications and terms of this Agreement:
+
+• <strong>Product Description &amp; Specifications:</strong> Detailed description of goods including make, model, grade, dimensions, weight, material composition, and any technical specifications required by Buyer; all goods to conform strictly to agreed samples or written specifications
+
+• <strong>Quality Standards &amp; Certifications:</strong> All goods shall meet applicable industry quality standards (ISO, USDA, FDA, or other relevant certifications as required); Seller shall maintain current certifications and provide copies upon request
+
+• <strong>Quantity, Measurement &amp; Packaging:</strong> Goods delivered in agreed quantities with industry-standard tolerances (±2% unless otherwise specified); packaging to prevent damage during transport and comply with applicable regulations, including proper labeling and unit markings
+
+• <strong>Labeling &amp; Regulatory Compliance:</strong> All goods shall be labeled in accordance with applicable federal, state, and local regulations; labels to include product name, net weight/volume, country of origin, ingredient/material listing, and any required safety or handling warnings
+
+• <strong>Storage, Handling &amp; Transportation Standards:</strong> Goods to be stored and transported under conditions appropriate to the product type (temperature-controlled, humidity-controlled, or as specified); Seller responsible for proper handling until risk of loss passes to Buyer
+
+• <strong>Testing, Inspection &amp; QA Procedures:</strong> Seller to perform quality control inspections prior to shipment; test records and certificates of analysis available upon request; Buyer's right to pre-shipment inspection at Seller's facility with reasonable notice`;
+    }
+
     // GENERIC FALLBACK
     else {
         const hasMultipleWords = briefDescription.split(/\s+/).length > 3;
@@ -425,6 +443,15 @@ function amplifyDeliverables(briefDescription) {
             }
         }
         
+        // GOODS / PRODUCTS / AGRICULTURAL
+        else if (/goods|farm|crop|produce|product|manufactur|wholesale|retail|inventory|merchandise|commodity/.test(itemLower)) {
+            deliverables.push(`<strong>Physical Goods Shipment — ${clean}:</strong> Goods delivered in agreed quantities, properly packaged and labeled per specification, meeting all quality standards agreed upon in this Agreement`);
+            deliverables.push(`<strong>Certificate of Conformance:</strong> Written certification that goods conform to all specifications, quality standards, and applicable regulatory requirements; issued per shipment`);
+            deliverables.push(`<strong>Packing List &amp; Shipping Documents:</strong> Itemized packing list, bill of lading or carrier documentation, and any required customs or regulatory paperwork accompanying each shipment`);
+            deliverables.push(`<strong>Commercial Invoice &amp; Payment Records:</strong> Accurate commercial invoice per shipment reflecting agreed pricing, quantities, and payment terms; records retained for minimum 3 years`);
+            deliverables.push(`<strong>Test Reports &amp; Inspection Certificates:</strong> Quality control test results, certificates of analysis, third-party inspection reports (if required), and any food safety or regulatory compliance documentation applicable to the goods`);
+        }
+
         // GENERIC/CATCH-ALL
         else {
             const wordCount = clean.split(/\s+/).length;
@@ -591,7 +618,7 @@ function generateServiceContract(today, amplifiedScope, amplifiedDeliverables) {
     return `
 <h1 style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 30px;">SERVICE AGREEMENT</h1>
 
-<p style="margin-bottom: 20px;">This Service Agreement ("Agreement") is entered into as of ${hl(today)} by and between:</p>
+<p style="margin-bottom: 20px;">This Service Agreement ("Agreement") is entered into as of ${hl(today)} ("Effective Date") by and between:</p>
 
 <p style="margin-bottom: 10px;"><strong>SERVICE PROVIDER:</strong></p>
 <p style="margin-bottom: 5px; font-weight: 600;">${hl(contractData.businessName)}</p>
@@ -601,10 +628,12 @@ function generateServiceContract(today, amplifiedScope, amplifiedDeliverables) {
 <p style="margin-bottom: 5px; font-weight: 600;">${hl(contractData.clientName)}</p>
 <p style="margin-bottom: 30px;">Email: ${hl(contractData.clientEmail)}</p>
 
+<p style="margin-bottom: 30px;">collectively referred to as the "Parties."</p>
+
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. SERVICES</h2>
 
 <div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> - Professional service description expanded from your input.</p>
+<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> — Professional service description expanded from your input.</p>
 </div>
 
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
@@ -613,37 +642,95 @@ ${formatBulletList(amplifiedScope)}
 
 ${contractData.frequency ? `<p style="margin-bottom: 20px;"><strong>Service Frequency:</strong> ${hl(contractData.frequency)}</p>` : ''}
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">2. COMPENSATION</h2>
-<p style="margin-bottom: 20px;">Client agrees to pay Provider ${hl('$' + contractData.price)} ${contractData.frequency ? 'per ' + contractData.frequency.toLowerCase() : ''} for the services described.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">2. SERVICE STANDARDS</h2>
+<p style="margin-bottom: 10px;">Provider shall perform all services in a professional and workmanlike manner consistent with industry standards. Provider shall:</p>
+<p style="margin-bottom: 8px;">• Respond to Client communications within <strong>${hl('2 business days')}</strong>;</p>
+<p style="margin-bottom: 8px;">• Notify Client promptly of any issues that may affect delivery timelines or quality;</p>
+<p style="margin-bottom: 20px;">• Maintain the qualifications, licenses, and certifications necessary to perform the services.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">3. PAYMENT TERMS</h2>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">3. COMPENSATION</h2>
+<p style="margin-bottom: 20px;">Client agrees to pay Provider <strong>${hl('$' + contractData.price)}</strong> ${contractData.frequency ? 'per ' + contractData.frequency.toLowerCase() : ''} for the services described in Section 1.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">4. PAYMENT TERMS</h2>
 <p style="margin-bottom: 10px;"><strong>Payment Schedule:</strong> ${hl(contractData.paymentTerms)}</p>
-<p style="margin-bottom: 20px;"><strong>Late Payments:</strong> Late payments subject to ${hl('1.5%')} monthly fee.</p>
+<p style="margin-bottom: 10px;"><strong>Late Payments:</strong> Invoices unpaid after <strong>15 days</strong> from the due date are subject to a late fee of <strong>1.5% per month</strong> (18% per annum) on the outstanding balance.</p>
+<p style="margin-bottom: 20px;"><strong>Disputed Invoices:</strong> Client must notify Provider in writing of any invoice dispute within 10 days of receipt. Undisputed amounts remain payable on schedule.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">4. TERM</h2>
-<p style="margin-bottom: 20px;">This Agreement is effective for ${contractData.contractLength || hl('[duration]')} beginning ${hl(today)}.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">5. CHANGE ORDERS</h2>
+<p style="margin-bottom: 10px;">Any changes to the scope of services described in Section 1 require a written Change Order signed by both Parties before work begins. Change Orders shall specify:</p>
+<p style="margin-bottom: 8px;">• A description of the additional or modified services;</p>
+<p style="margin-bottom: 8px;">• Any adjustment to the fees (billed at <strong>${hl('$[hourly rate]')}/hour</strong> unless otherwise agreed);</p>
+<p style="margin-bottom: 20px;">• Any revised timeline or deliverable dates.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">5. TERMINATION</h2>
-<p style="margin-bottom: 20px;">Either party may terminate with ${hl('30 days')} written notice.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">6. TERM &amp; RENEWAL</h2>
+<p style="margin-bottom: 10px;">This Agreement commences on the Effective Date and continues for <strong>${contractData.contractLength || hl('[duration]')}</strong> ("Initial Term").</p>
+<p style="margin-bottom: 20px;">Upon expiration of the Initial Term, this Agreement shall automatically renew for successive periods of the same duration unless either Party provides written notice of non-renewal at least <strong>30 days</strong> before the end of the then-current term.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">6. GENERAL PROVISIONS</h2>
-<p style="margin-bottom: 10px;"><strong>Governing Law:</strong> ${hl('[Your State]')}</p>
-<p style="margin-bottom: 20px;"><strong>Entire Agreement:</strong> Supersedes all prior agreements.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">7. CONFIDENTIALITY</h2>
+<p style="margin-bottom: 10px;">Each Party ("Receiving Party") agrees to hold in strict confidence all non-public, proprietary, or confidential information disclosed by the other Party ("Disclosing Party"), including but not limited to business plans, financial data, customer lists, pricing, and trade secrets ("Confidential Information").</p>
+<p style="margin-bottom: 10px;">The Receiving Party shall:</p>
+<p style="margin-bottom: 8px;">• Not disclose Confidential Information to third parties without prior written consent;</p>
+<p style="margin-bottom: 8px;">• Use Confidential Information solely to perform obligations under this Agreement;</p>
+<p style="margin-bottom: 20px;">• Protect Confidential Information with at least the same degree of care used for its own confidential information, but no less than reasonable care. Obligations survive termination for <strong>3 years</strong>.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">8. DATA PROTECTION</h2>
+<p style="margin-bottom: 10px;">To the extent Provider has access to Client's personal or business data, Provider shall:</p>
+<p style="margin-bottom: 8px;">• Process such data only as necessary to perform the services;</p>
+<p style="margin-bottom: 8px;">• Implement reasonable technical and organizational safeguards to protect data against unauthorized access or disclosure;</p>
+<p style="margin-bottom: 20px;">• Not sell, share, or transfer Client data to third parties without express written consent, except as required by applicable law.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">9. INTELLECTUAL PROPERTY</h2>
+<p style="margin-bottom: 10px;"><strong>Work Product:</strong> All deliverables, reports, designs, and other work product created specifically for Client under this Agreement ("Work Product") shall become the sole property of Client upon receipt of full payment.</p>
+<p style="margin-bottom: 20px;"><strong>Pre-Existing IP:</strong> Provider retains all rights in tools, methodologies, templates, software, and other materials developed independently of this Agreement ("Pre-Existing IP"). Provider grants Client a non-exclusive, non-transferable license to use Pre-Existing IP incorporated into the Work Product solely for Client's internal business purposes.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">10. WARRANTIES</h2>
+<p style="margin-bottom: 10px;">Provider warrants that:</p>
+<p style="margin-bottom: 8px;">• Services will be performed in a professional and workmanlike manner consistent with industry standards;</p>
+<p style="margin-bottom: 8px;">• Provider has the right and authority to enter into this Agreement and provide the services;</p>
+<p style="margin-bottom: 20px;">• Work Product will not infringe the intellectual property rights of any third party. If any deliverable fails to conform to these warranties, Provider shall correct the defect within <strong>30 days</strong> of written notice at no additional charge.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">11. LIMITATION OF LIABILITY</h2>
+<p style="margin-bottom: 10px;">To the maximum extent permitted by applicable law, Provider's total cumulative liability to Client for any and all claims arising under or related to this Agreement shall not exceed the total fees paid by Client to Provider in the <strong>3 months</strong> immediately preceding the claim.</p>
+<p style="margin-bottom: 20px;">Neither Party shall be liable for any indirect, incidental, special, consequential, or punitive damages, including lost profits or loss of data, even if advised of the possibility of such damages.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">12. INDEMNIFICATION</h2>
+<p style="margin-bottom: 10px;">Each Party ("Indemnifying Party") shall defend, indemnify, and hold harmless the other Party and its officers, directors, and employees from and against any claims, damages, losses, and expenses (including reasonable attorneys' fees) arising out of or resulting from the Indemnifying Party's:</p>
+<p style="margin-bottom: 8px;">• Negligence or willful misconduct;</p>
+<p style="margin-bottom: 20px;">• Breach of any representation, warranty, or obligation under this Agreement.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">13. INSURANCE</h2>
+<p style="margin-bottom: 20px;">During the term of this Agreement, Provider shall maintain, at its own expense, commercial general liability insurance with limits of not less than <strong>${hl('$1,000,000')}</strong> per occurrence. Provider shall provide Client with certificates of insurance upon request.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">14. TERMINATION</h2>
+<p style="margin-bottom: 10px;"><strong>Termination for Convenience:</strong> Either Party may terminate this Agreement for any reason by providing <strong>30 days</strong> written notice to the other Party. Client shall pay for all services satisfactorily performed through the termination date.</p>
+<p style="margin-bottom: 10px;"><strong>Termination for Cause:</strong> Either Party may terminate immediately upon written notice if the other Party materially breaches this Agreement and fails to cure such breach within <strong>7 days</strong> of receiving written notice of the breach.</p>
+<p style="margin-bottom: 20px;"><strong>Effect of Termination:</strong> Sections 7 (Confidentiality), 9 (Intellectual Property), 10 (Warranties), 11 (Limitation of Liability), and 12 (Indemnification) shall survive termination of this Agreement.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">15. GENERAL PROVISIONS</h2>
+<p style="margin-bottom: 8px;"><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the State of ${hl('[Your State]')}, without regard to conflict-of-law principles.</p>
+<p style="margin-bottom: 8px;"><strong>Dispute Resolution:</strong> Any dispute arising under this Agreement shall first be submitted to good-faith mediation. If mediation fails within 30 days, the dispute shall be resolved by binding arbitration in accordance with the rules of the American Arbitration Association.</p>
+<p style="margin-bottom: 8px;"><strong>Force Majeure:</strong> Neither Party shall be in default for failure to perform due to causes beyond its reasonable control, including acts of God, natural disasters, pandemics, or government actions, provided the affected Party gives prompt written notice.</p>
+<p style="margin-bottom: 8px;"><strong>Independent Contractor:</strong> Provider is an independent contractor and not an employee, agent, or partner of Client. Provider is solely responsible for its own taxes and benefits.</p>
+<p style="margin-bottom: 8px;"><strong>Entire Agreement:</strong> This Agreement constitutes the entire agreement between the Parties regarding the subject matter herein and supersedes all prior agreements, representations, and understandings.</p>
+<p style="margin-bottom: 20px;"><strong>Severability:</strong> If any provision of this Agreement is found invalid or unenforceable, the remaining provisions shall continue in full force and effect.</p>
 
 <div style="margin-top: 80px; border-top: 2px solid #E5E7EB; padding-top: 40px;">
     <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">SIGNATURES</h2>
+    <p style="margin-bottom: 30px;">By signing below, the Parties agree to be bound by the terms of this Service Agreement.</p>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px;">
         <div>
-            <p style="font-weight: bold; margin-bottom: 10px;">PROVIDER:</p>
+            <p style="font-weight: bold; margin-bottom: 10px;">SERVICE PROVIDER:</p>
             <p style="font-weight: 600; margin-bottom: 40px;">${hl(contractData.businessName)}</p>
             <p style="border-bottom: 2px solid #000; padding-bottom: 20px;">&nbsp;</p>
-            <p style="font-size: 14px; color: #666; margin-top: 8px;">Signature</p>
+            <p style="font-size: 14px; color: #666; margin-top: 8px;">Authorized Signature</p>
+            <p style="margin-top: 20px;">Date: _______________</p>
         </div>
         <div>
             <p style="font-weight: bold; margin-bottom: 10px;">CLIENT:</p>
             <p style="font-weight: 600; margin-bottom: 40px;">${hl(contractData.clientName)}</p>
             <p style="border-bottom: 2px solid #000; padding-bottom: 20px;">&nbsp;</p>
-            <p style="font-size: 14px; color: #666; margin-top: 8px;">Signature</p>
+            <p style="font-size: 14px; color: #666; margin-top: 8px;">Authorized Signature</p>
+            <p style="margin-top: 20px;">Date: _______________</p>
         </div>
     </div>
 </div>
@@ -651,9 +738,9 @@ ${contractData.frequency ? `<p style="margin-bottom: 20px;"><strong>Service Freq
 }
 
 function generateProductContract(today, amplifiedScope, amplifiedDeliverables) {
-    return `<h1 style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 30px;">PRODUCT SALES AGREEMENT</h1>
+    return `<h1 style="text-align: center; font-size: 28px; font-weight: bold; margin-bottom: 30px;">GOODS SALE AGREEMENT</h1>
 
-<p style="margin-bottom: 20px;">This Agreement is entered into as of ${hl(today)} by and between:</p>
+<p style="margin-bottom: 20px;">This Goods Sale Agreement ("Agreement") is entered into as of ${hl(today)} ("Effective Date") by and between:</p>
 
 <p style="margin-bottom: 10px;"><strong>SELLER:</strong></p>
 <p style="margin-bottom: 5px; font-weight: 600;">${hl(contractData.businessName)}</p>
@@ -663,50 +750,113 @@ function generateProductContract(today, amplifiedScope, amplifiedDeliverables) {
 <p style="margin-bottom: 5px; font-weight: 600;">${hl(contractData.clientName)}</p>
 <p style="margin-bottom: 30px;">Email: ${hl(contractData.clientEmail)}</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. PRODUCTS</h2>
+<p style="margin-bottom: 30px;">collectively referred to as the "Parties."</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. GOODS DESCRIPTION</h2>
 
 <div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> - Product specifications expanded professionally.</p>
+<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> — Goods specifications and standards expanded from your input.</p>
 </div>
 
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
 ${formatBulletList(amplifiedScope)}
 </div>
 
-${contractData.quantity ? `<p style="margin-bottom: 20px;"><strong>Quantity:</strong> ${hl(contractData.quantity)}</p>` : ''}
+${contractData.quantity ? `<p style="margin-bottom: 10px;"><strong>Quantity:</strong> ${hl(contractData.quantity)}</p>` : ''}
 ${contractData.unitPrice ? `<p style="margin-bottom: 20px;"><strong>Unit Price:</strong> ${hl('$' + contractData.unitPrice)}</p>` : ''}
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">2. PURCHASE PRICE</h2>
-<p style="margin-bottom: 20px;">Total purchase price: ${hl('$' + contractData.price)}</p>
+<p style="margin-bottom: 20px;">The total purchase price for the goods described above is <strong>${hl('$' + contractData.price)}</strong>.</p>
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">3. PAYMENT TERMS</h2>
-<p style="margin-bottom: 20px;">${hl(contractData.paymentTerms)}</p>
+<p style="margin-bottom: 10px;"><strong>Payment Schedule:</strong> ${hl(contractData.paymentTerms)}</p>
+<p style="margin-bottom: 10px;"><strong>Late Payments:</strong> Amounts unpaid more than <strong>15 days</strong> after the due date shall accrue interest at <strong>1.5% per month</strong> (18% per annum) until paid in full.</p>
+<p style="margin-bottom: 20px;"><strong>Disputed Invoices:</strong> Buyer must notify Seller in writing of any invoice dispute within <strong>10 days</strong> of receipt. Undisputed amounts remain payable on schedule.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">4. DELIVERY</h2>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">4. DELIVERY TERMS</h2>
 ${contractData.deliveryDate ? `<p style="margin-bottom: 10px;"><strong>Delivery Date:</strong> ${hl(contractData.deliveryDate)}</p>` : ''}
-${contractData.deliveryLocation ? `<p style="margin-bottom: 20px;"><strong>Delivery Location:</strong> ${hl(contractData.deliveryLocation)}</p>` : ''}
+${contractData.deliveryLocation ? `<p style="margin-bottom: 10px;"><strong>Delivery Location:</strong> ${hl(contractData.deliveryLocation)}</p>` : ''}
+<p style="margin-bottom: 10px;"><strong>Shipping Terms:</strong> FOB Seller's facility unless otherwise agreed in writing. Seller shall arrange commercially reasonable transportation and provide Buyer with tracking information.</p>
+<p style="margin-bottom: 20px;"><strong>Partial Shipments:</strong> Seller may make partial shipments with Buyer's written consent. Each partial shipment shall be separately invoiced.</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">5. INSPECTION & ACCEPTANCE</h2>
-<p style="margin-bottom: 20px;">Buyer has ${hl('48 hours')} from delivery to inspect and reject non-conforming goods.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">5. TITLE &amp; RISK OF LOSS</h2>
+<p style="margin-bottom: 10px;"><strong>Title:</strong> Title to the goods shall pass to Buyer upon receipt of full payment for such goods.</p>
+<p style="margin-bottom: 20px;"><strong>Risk of Loss:</strong> Risk of loss or damage to the goods shall transfer to Buyer upon delivery of the goods to Buyer's designated location (or carrier if FOB Seller's facility).</p>
 
-<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">6. GENERAL PROVISIONS</h2>
-<p style="margin-bottom: 10px;"><strong>Governing Law:</strong> ${hl('[Your State]')}</p>
-<p style="margin-bottom: 20px;"><strong>Entire Agreement:</strong> Supersedes all prior agreements.</p>
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">6. PACKAGING &amp; LABELING</h2>
+<p style="margin-bottom: 10px;">Seller shall package and label all goods in accordance with industry standards and applicable law, including:</p>
+<p style="margin-bottom: 8px;">• Packaging sufficient to prevent damage during storage and transportation;</p>
+<p style="margin-bottom: 8px;">• Labels identifying product name, quantity, weight or volume, country of origin, and any required safety or regulatory information;</p>
+<p style="margin-bottom: 20px;">• Compliance with all applicable federal, state, and local labeling regulations (including food safety, hazardous materials, or other applicable standards).</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">7. INSPECTION &amp; ACCEPTANCE</h2>
+<p style="margin-bottom: 10px;">Buyer shall have <strong>5 business days</strong> after delivery to inspect the goods ("Inspection Period"). Goods shall be deemed accepted unless Buyer provides written notice of rejection within the Inspection Period specifying:</p>
+<p style="margin-bottom: 8px;">• The specific goods being rejected;</p>
+<p style="margin-bottom: 8px;">• The nature of the non-conformance in reasonable detail.</p>
+<p style="margin-bottom: 20px;">Failure to provide timely written notice of rejection constitutes final acceptance.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">8. NON-CONFORMING GOODS</h2>
+<p style="margin-bottom: 10px;">If Buyer rightfully rejects non-conforming goods under Section 7, Seller shall, at Seller's election within <strong>10 business days</strong> of receiving Buyer's rejection notice:</p>
+<p style="margin-bottom: 8px;">• Replace the non-conforming goods with conforming goods at no additional cost to Buyer; or</p>
+<p style="margin-bottom: 8px;">• Issue a full refund or credit for the rejected goods.</p>
+<p style="margin-bottom: 20px;">Buyer shall return rejected goods to Seller at Seller's expense. Seller's obligations in this Section constitute Buyer's exclusive remedy for non-conforming goods, subject to Section 9 (Product Warranties).</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">9. PRODUCT WARRANTIES</h2>
+<p style="margin-bottom: 10px;">Seller warrants that all goods sold under this Agreement:</p>
+<p style="margin-bottom: 8px;">• Are merchantable and fit for their ordinary intended purpose;</p>
+<p style="margin-bottom: 8px;">• Conform to all agreed specifications, samples, and descriptions;</p>
+<p style="margin-bottom: 8px;">• Are free from material defects in materials and workmanship for a period of <strong>90 days</strong> from the date of delivery ("Warranty Period").</p>
+<p style="margin-bottom: 20px;">This warranty does not apply to defects caused by Buyer's misuse, negligence, unauthorized modification, or failure to follow Seller's storage and handling instructions.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">10. LIMITATION OF LIABILITY</h2>
+<p style="margin-bottom: 10px;">To the maximum extent permitted by applicable law, Seller's total liability to Buyer for any and all claims arising under this Agreement shall not exceed the total purchase price paid by Buyer under this Agreement.</p>
+<p style="margin-bottom: 20px;">Neither Party shall be liable for any indirect, incidental, special, consequential, or punitive damages, including lost profits or business interruption, even if advised of the possibility of such damages.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">11. INDEMNIFICATION</h2>
+<p style="margin-bottom: 10px;">Seller shall defend, indemnify, and hold harmless Buyer and its officers, directors, and employees from and against any third-party claims, damages, losses, and expenses (including reasonable attorneys' fees) arising from:</p>
+<p style="margin-bottom: 8px;">• Product defects that cause bodily injury or property damage;</p>
+<p style="margin-bottom: 8px;">• Seller's breach of product warranties;</p>
+<p style="margin-bottom: 20px;">• Seller's infringement of any third-party intellectual property rights in the goods.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">12. CONFIDENTIALITY</h2>
+<p style="margin-bottom: 10px;">Each Party agrees to keep confidential the other Party's proprietary information, including pricing, product formulations, supply chain details, and business terms of this Agreement. Neither Party shall disclose such information to third parties without prior written consent.</p>
+<p style="margin-bottom: 20px;">Confidentiality obligations survive termination of this Agreement for <strong>2 years</strong>.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">13. FORCE MAJEURE</h2>
+<p style="margin-bottom: 10px;">Neither Party shall be liable for delays or failures in performance resulting from causes beyond its reasonable control, including natural disasters, pandemics, supply chain disruptions, acts of government, or labor disputes ("Force Majeure Event").</p>
+<p style="margin-bottom: 20px;">The affected Party must provide written notice within <strong>5 business days</strong> of the Force Majeure Event. If a Force Majeure Event continues for more than <strong>30 days</strong>, either Party may terminate the affected portion of this Agreement without penalty.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">14. COMPLIANCE &amp; REGULATIONS</h2>
+<p style="margin-bottom: 10px;">Seller represents and warrants that the goods comply with all applicable federal, state, and local laws and regulations, including:</p>
+<p style="margin-bottom: 8px;">• Product safety standards and consumer protection regulations;</p>
+<p style="margin-bottom: 8px;">• Food safety regulations (FSMA, FDA, USDA) where applicable;</p>
+<p style="margin-bottom: 8px;">• Import/export controls and customs requirements;</p>
+<p style="margin-bottom: 20px;">• Environmental and hazardous materials regulations. Seller shall promptly notify Buyer of any recalls, regulatory actions, or safety concerns affecting the goods.</p>
+
+<h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">15. GENERAL PROVISIONS</h2>
+<p style="margin-bottom: 8px;"><strong>Governing Law:</strong> This Agreement shall be governed by the laws of the State of ${hl('[Your State]')}, and the Uniform Commercial Code (UCC) as adopted in that State, without regard to conflict-of-law principles.</p>
+<p style="margin-bottom: 8px;"><strong>Dispute Resolution:</strong> Any dispute arising under this Agreement shall first be submitted to good-faith negotiation. If unresolved within 30 days, disputes shall be settled by binding arbitration under the rules of the American Arbitration Association.</p>
+<p style="margin-bottom: 8px;"><strong>Entire Agreement:</strong> This Agreement constitutes the entire agreement between the Parties regarding the sale and purchase of the goods and supersedes all prior agreements and understandings.</p>
+<p style="margin-bottom: 8px;"><strong>Amendments:</strong> Any amendment to this Agreement must be in writing and signed by authorized representatives of both Parties.</p>
+<p style="margin-bottom: 20px;"><strong>Severability:</strong> If any provision of this Agreement is found invalid or unenforceable, the remaining provisions shall continue in full force and effect.</p>
 
 <div style="margin-top: 80px; border-top: 2px solid #E5E7EB; padding-top: 40px;">
     <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 40px;">SIGNATURES</h2>
+    <p style="margin-bottom: 30px;">By signing below, the Parties agree to be bound by the terms of this Goods Sale Agreement.</p>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px;">
         <div>
             <p style="font-weight: bold; margin-bottom: 10px;">SELLER:</p>
             <p style="font-weight: 600; margin-bottom: 40px;">${hl(contractData.businessName)}</p>
             <p style="border-bottom: 2px solid #000; padding-bottom: 20px;">&nbsp;</p>
-            <p style="font-size: 14px; color: #666; margin-top: 8px;">Signature</p>
+            <p style="font-size: 14px; color: #666; margin-top: 8px;">Authorized Signature</p>
+            <p style="margin-top: 20px;">Date: _______________</p>
         </div>
         <div>
             <p style="font-weight: bold; margin-bottom: 10px;">BUYER:</p>
             <p style="font-weight: 600; margin-bottom: 40px;">${hl(contractData.clientName)}</p>
             <p style="border-bottom: 2px solid #000; padding-bottom: 20px;">&nbsp;</p>
-            <p style="font-size: 14px; color: #666; margin-top: 8px;">Signature</p>
+            <p style="font-size: 14px; color: #666; margin-top: 8px;">Authorized Signature</p>
+            <p style="margin-top: 20px;">Date: _______________</p>
         </div>
     </div>
 </div>`;
