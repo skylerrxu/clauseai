@@ -1329,34 +1329,50 @@ async function improvePrompt() {
     document.getElementById('revert-btn').classList.remove('show');
 
     const messages = [{ role: 'user', content: text }];
-    let improved = '';
 
-    await AIClient.stream(messages, AIClient.SYSTEM_PROMPTS.IMPROVE, {
-        onChunk: (chunk) => {
-            improved += chunk;
-            document.getElementById('intake-textarea').value = improved;
-        },
-        onComplete: (full) => {
-            appState.improvedPrompt = full;
-            // Render highlighted preview and hide textarea
-            const preview = document.getElementById('improve-preview');
-            const highlighted = full.replace(/\[([^\]]+)\]/g, '<mark class="bracket-highlight">[$1]</mark>');
-            const labelHTML = '<div class="improve-preview-label">✦ AI Brief <span style="font-weight:400;color:#B45309">— fill in highlighted fields</span></div>';
-            const contentHTML = '<div id="improve-content" contenteditable="true">' + highlighted.split('\n').map(line => `<div>${line || '<br>'}</div>`).join('') + '</div>';
-            preview.innerHTML = labelHTML + contentHTML;
-            preview.style.display = 'block';
-            preview.classList.add('show');
-            document.getElementById('intake-textarea').style.display = 'none';
-            // Show revert button
-            document.getElementById('revert-btn').classList.add('show');
-            if (typeof Analytics !== 'undefined') Analytics.trackImprove(appState.provider);
-        },
-        onError: (err) => {
+    // Helper: render the improved result (shared by both paths)
+    function renderImproveResult(full) {
+        appState.improvedPrompt = full;
+        const preview = document.getElementById('improve-preview');
+        const highlighted = full.replace(/\[([^\]]+)\]/g, '<mark class="bracket-highlight">[$1]</mark>');
+        const labelHTML = '<div class="improve-preview-label">✦ AI Brief <span style="font-weight:400;color:#B45309">— fill in highlighted fields</span></div>';
+        const contentHTML = '<div id="improve-content" contenteditable="true">' + highlighted.split('\n').map(line => `<div>${line || '<br>'}</div>`).join('') + '</div>';
+        preview.innerHTML = labelHTML + contentHTML;
+        preview.style.display = 'block';
+        preview.classList.add('show');
+        document.getElementById('intake-textarea').style.display = 'none';
+        document.getElementById('revert-btn').classList.add('show');
+        if (typeof Analytics !== 'undefined') Analytics.trackImprove(appState.provider);
+    }
+
+    const _improveProv = localStorage.getItem('signflow_provider') || 'free_tier';
+
+    if (_improveProv === 'free_tier') {
+        // ── Free tier: proxy (no user API key needed) ──
+        try {
+            const full = await generateViaProxy(messages, AIClient.SYSTEM_PROMPTS.IMPROVE);
+            renderImproveResult(full);
+        } catch (err) {
             showApiError(err.message);
             document.getElementById('intake-textarea').value = text;
             appState.originalPrompt = '';
         }
-    });
+    } else {
+        // ── BYOK: user's own Claude/OpenAI key ──
+        let improved = '';
+        await AIClient.stream(messages, AIClient.SYSTEM_PROMPTS.IMPROVE, {
+            onChunk: (chunk) => {
+                improved += chunk;
+                document.getElementById('intake-textarea').value = improved;
+            },
+            onComplete: (full) => { renderImproveResult(full); },
+            onError: (err) => {
+                showApiError(err.message);
+                document.getElementById('intake-textarea').value = text;
+                appState.originalPrompt = '';
+            }
+        });
+    }
 
     btn.disabled = false;
     document.getElementById('improve-icon').textContent = '✦';
