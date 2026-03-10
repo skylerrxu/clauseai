@@ -517,19 +517,11 @@ function generateFreelancerContract(today, amplifiedScope, amplifiedDeliverables
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. SCOPE OF WORK</h2>
 
-<div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> - We expanded your brief description into detailed professional language. Feel free to edit.</p>
-</div>
-
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
 ${formatBulletList(amplifiedScope)}
 </div>
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">2. DELIVERABLES</h2>
-
-<div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> - We detailed your deliverables with professional specifications. Customize as needed.</p>
-</div>
 
 <p style="margin-bottom: 15px;">Contractor will deliver the following:</p>
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
@@ -631,10 +623,6 @@ function generateServiceContract(today, amplifiedScope, amplifiedDeliverables) {
 <p style="margin-bottom: 30px;">collectively referred to as the "Parties."</p>
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. SERVICES</h2>
-
-<div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> — Professional service description expanded from your input.</p>
-</div>
 
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
 ${formatBulletList(amplifiedScope)}
@@ -753,10 +741,6 @@ function generateProductContract(today, amplifiedScope, amplifiedDeliverables) {
 <p style="margin-bottom: 30px;">collectively referred to as the "Parties."</p>
 
 <h2 style="font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 15px;">1. GOODS DESCRIPTION</h2>
-
-<div style="background: #DBEAFE; border-left: 4px solid #3B82F6; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-<p style="margin: 0; color: #1E40AF; font-size: 14px;"><strong>🤖 AI Enhanced</strong> — Goods specifications and standards expanded from your input.</p>
-</div>
 
 <div style="background: #F3F4F6; padding: 20px; border-left: 4px solid #6366F1; margin-bottom: 20px; line-height: 1.9;">
 ${formatBulletList(amplifiedScope)}
