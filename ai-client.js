@@ -116,7 +116,7 @@ The current contract will be provided as context in the system message.`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-sonnet-4-6',
         max_tokens: 8192,
         stream: true,
         system: systemPrompt,
